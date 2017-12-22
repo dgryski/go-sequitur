@@ -1,3 +1,9 @@
+// Package sequitur implements the sequitur algorithm
+/*
+	http://www.sequitur.info/
+	https://en.wikipedia.org/wiki/Sequitur_algorithm
+
+*/
 package sequitur
 
 import (
