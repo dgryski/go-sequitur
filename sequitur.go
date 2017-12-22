@@ -314,9 +314,6 @@ func ParseAndPrint(w io.Writer, str []byte) {
 	for _, c := range str[1:] {
 		S.last().insert_after(g.newSymbolFromValue(uintptr(c)))
 		S.last().prev().check()
-		//	fmt.Fprintf(w, "R=%v\n", R[:Ri])
-		//	fmt.Fprintf(w, "table=%v\n", table)
-		//	print(w, S)
 	}
 
 	var pr Printer
