@@ -64,13 +64,13 @@ func (s *symbols) join(right *symbols) {
 		if right.p != nil && right.n != nil &&
 			right.value() == right.p.value() &&
 			right.value() == right.n.value() {
-			set_digram(right)
+			table.insert(right)
 		}
 
 		if s.p != nil && s.n != nil &&
 			s.value() == s.n.value() &&
 			s.value() == s.p.value() {
-			set_digram(s.p)
+			table.insert(s.p)
 		}
 	}
 	s.n = right
@@ -96,7 +96,7 @@ func (s *symbols) delete_digram() {
 	if s.is_guard() || s.n.is_guard() {
 		return
 	}
-	delete_from_hash_table(s)
+	table.delete(s)
 }
 
 func (s *symbols) is_guard() (b bool) {
@@ -121,9 +121,9 @@ func (s *symbols) check() bool {
 		return false
 	}
 
-	x, ok := find_digram(s)
+	x, ok := table.lookup(s)
 	if !ok {
-		set_digram(s)
+		table.insert(s)
 		return false
 	}
 
@@ -143,7 +143,7 @@ func (s *symbols) expand() {
 	l := s.rule().last()
 
 	s.rule().delete()
-	delete_from_hash_table(s)
+	table.delete(s)
 
 	s.r = nil
 	s.delete()
@@ -151,7 +151,7 @@ func (s *symbols) expand() {
 	left.join(f)
 	l.join(right)
 
-	set_digram(l)
+	table.insert(l)
 }
 
 func (s *symbols) substitute(r *rules) {
@@ -192,7 +192,7 @@ func match(ss, m *symbols) {
 		m.substitute(r)
 		ss.substitute(r)
 
-		set_digram(r.first())
+		table.insert(r.first())
 	}
 
 	if r.first().nt() && r.first().rule().freq() == 1 {
@@ -204,29 +204,31 @@ type digram struct {
 	one, two uintptr
 }
 
-var table = map[digram]*symbols{}
+type digrams map[digram]*symbols
 
-func find_digram(s *symbols) (*symbols, bool) {
+var table digrams
+
+func (t digrams) lookup(s *symbols) (*symbols, bool) {
 	one := s.value()
 	two := s.next().value()
 	d := digram{one, two}
-	m, ok := table[d]
+	m, ok := t[d]
 	return m, ok
 }
 
-func set_digram(s *symbols) {
+func (t digrams) insert(s *symbols) {
 	one := s.value()
 	two := s.next().value()
 	d := digram{one, two}
-	table[d] = s
+	t[d] = s
 }
 
-func delete_from_hash_table(s *symbols) {
+func (t digrams) delete(s *symbols) {
 	one := s.value()
 	two := s.next().value()
 	d := digram{one, two}
-	if m, ok := table[d]; ok && s == m {
-		delete(table, d)
+	if m, ok := t[d]; ok && s == m {
+		delete(t, d)
 	}
 }
 
