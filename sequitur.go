@@ -57,7 +57,7 @@ func newSymbolFromRule(r *rules) *symbols {
 	}
 }
 
-func join(left, right *symbols) {
+func (left *symbols) join(right *symbols) {
 	if left.n != nil {
 		left.delete_digram()
 
@@ -78,7 +78,7 @@ func join(left, right *symbols) {
 }
 
 func (s *symbols) delete() {
-	join(s.p, s.n)
+	s.p.join(s.n)
 	if !s.is_guard() {
 		s.delete_digram()
 		if s.nt() {
@@ -88,8 +88,8 @@ func (s *symbols) delete() {
 }
 
 func (s *symbols) insert_after(y *symbols) {
-	join(y, s.n)
-	join(s, y)
+	y.join(s.n)
+	s.join(y)
 }
 
 func (s *symbols) delete_digram() {
@@ -142,7 +142,7 @@ func (s *symbols) check() bool {
 	return true
 }
 
-func (s *symbols) point_to_self() { join(s, s) }
+func (s *symbols) point_to_self() { s.join(s) }
 
 func (s *symbols) expand() {
 	left := s.prev()
@@ -156,8 +156,8 @@ func (s *symbols) expand() {
 	s.r = nil
 	s.delete()
 
-	join(left, f)
-	join(l, right)
+	left.join(f)
+	l.join(right)
 
 	set_digram(l)
 }
