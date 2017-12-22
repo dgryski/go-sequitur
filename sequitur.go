@@ -7,10 +7,13 @@ import (
 )
 
 type Grammar struct {
+	table digrams
 }
 
 func NewGrammar() *Grammar {
-	return &Grammar{}
+	return &Grammar{
+		table: make(digrams),
+	}
 }
 
 type rules struct {
@@ -53,6 +56,7 @@ type symbols struct {
 
 func (g *Grammar) newSymbolFromValue(sym uintptr) *symbols {
 	return &symbols{
+		g: g,
 		s: sym,
 	}
 }
@@ -60,6 +64,7 @@ func (g *Grammar) newSymbolFromValue(sym uintptr) *symbols {
 func (g *Grammar) newSymbolFromRule(r *rules) *symbols {
 	r.reuse()
 	return &symbols{
+		g: g,
 		s: uintptr(unsafe.Pointer(r)),
 		r: r,
 	}
@@ -72,13 +77,13 @@ func (s *symbols) join(right *symbols) {
 		if right.p != nil && right.n != nil &&
 			right.value() == right.p.value() &&
 			right.value() == right.n.value() {
-			table.insert(right)
+			s.g.table.insert(right)
 		}
 
 		if s.p != nil && s.n != nil &&
 			s.value() == s.n.value() &&
 			s.value() == s.p.value() {
-			table.insert(s.p)
+			s.g.table.insert(s.p)
 		}
 	}
 	s.n = right
@@ -104,7 +109,7 @@ func (s *symbols) delete_digram() {
 	if s.is_guard() || s.n.is_guard() {
 		return
 	}
-	table.delete(s)
+	s.g.table.delete(s)
 }
 
 func (s *symbols) is_guard() (b bool) {
@@ -129,9 +134,9 @@ func (s *symbols) check() bool {
 		return false
 	}
 
-	x, ok := table.lookup(s)
+	x, ok := s.g.table.lookup(s)
 	if !ok {
-		table.insert(s)
+		s.g.table.insert(s)
 		return false
 	}
 
@@ -151,7 +156,7 @@ func (s *symbols) expand() {
 	l := s.rule().last()
 
 	s.rule().delete()
-	table.delete(s)
+	s.g.table.delete(s)
 
 	s.r = nil
 	s.delete()
@@ -159,7 +164,7 @@ func (s *symbols) expand() {
 	left.join(f)
 	l.join(right)
 
-	table.insert(l)
+	s.g.table.insert(l)
 }
 
 func (s *symbols) substitute(r *rules) {
@@ -200,7 +205,7 @@ func (s *symbols) match(m *symbols) {
 		m.substitute(r)
 		s.substitute(r)
 
-		table.insert(r.first())
+		s.g.table.insert(r.first())
 	}
 
 	if r.first().nt() && r.first().rule().freq() == 1 {
@@ -213,8 +218,6 @@ type digram struct {
 }
 
 type digrams map[digram]*symbols
-
-var table digrams
 
 func (t digrams) lookup(s *symbols) (*symbols, bool) {
 	one := s.value()
@@ -302,9 +305,6 @@ func (pr *Printer) Print(w io.Writer, r *rules) {
 }
 
 func ParseAndPrint(w io.Writer, str []byte) {
-
-	// reset global state
-	table = make(map[digram]*symbols)
 
 	g := NewGrammar()
 
