@@ -289,7 +289,8 @@ func (pr *prettyPrinter) printTerminal(w io.Writer, sym uintptr) error {
 	return err
 }
 
-var ErrNoParsedGrammar = errors.New("sequitor: no parsed grammar")
+// ErrNoParsedGrammar is returned if no grammar has been parsed
+var ErrNoParsedGrammar = errors.New("sequitur: no parsed grammar")
 
 func rawPrint(w io.Writer, r *rules) error {
 	for p := r.first(); !p.isGuard(); p = p.next {
@@ -310,7 +311,7 @@ func (g *Grammar) Print(w io.Writer) {
 	rawPrint(w, g.base)
 }
 
-// Print outputs the grammar to w
+// PrettyPrint outputs the grammar to w
 func (g *Grammar) PrettyPrint(w io.Writer) error {
 
 	if g.base == nil {
