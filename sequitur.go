@@ -39,13 +39,6 @@ func (g *Grammar) newRules() *rules {
 	return r
 }
 
-type symbols struct {
-	g          *Grammar
-	next, prev *symbols
-	value      uint64
-	rule       *rules
-}
-
 func (g *Grammar) newSymbolFromValue(sym uint64) *symbols {
 	return &symbols{
 		g:     g,
@@ -68,6 +61,38 @@ func (g *Grammar) newGuard(r *rules) *symbols {
 	return s
 }
 
+func (g *Grammar) newSymbol(s *symbols) *symbols {
+	if s.isNonTerminal() {
+		return g.newSymbolFromRule(s.rule)
+	}
+	return g.newSymbolFromValue(s.value)
+}
+
+type symbols struct {
+	g          *Grammar
+	next, prev *symbols
+	value      uint64
+	rule       *rules
+}
+
+func (s *symbols) isGuard() (b bool) {
+	return s.isNonTerminal() && s.rule.first().prev == s
+}
+
+func (s *symbols) isNonTerminal() bool {
+	return s.rule != nil
+}
+
+func (s *symbols) delete() {
+	s.prev.join(s.next)
+	if !s.isGuard() {
+		s.deleteDigram()
+		if s.isNonTerminal() {
+			s.rule.count--
+		}
+	}
+}
+
 func (s *symbols) join(right *symbols) {
 	if s.next != nil {
 		s.deleteDigram()
@@ -88,16 +113,6 @@ func (s *symbols) join(right *symbols) {
 	right.prev = s
 }
 
-func (s *symbols) delete() {
-	s.prev.join(s.next)
-	if !s.isGuard() {
-		s.deleteDigram()
-		if s.isNonTerminal() {
-			s.rule.count--
-		}
-	}
-}
-
 func (s *symbols) insertAfter(y *symbols) {
 	y.join(s.next)
 	s.join(y)
@@ -108,14 +123,6 @@ func (s *symbols) deleteDigram() {
 		return
 	}
 	s.g.table.delete(s)
-}
-
-func (s *symbols) isGuard() (b bool) {
-	return s.isNonTerminal() && s.rule.first().prev == s
-}
-
-func (s *symbols) isNonTerminal() bool {
-	return s.rule != nil
 }
 
 func (s *symbols) check() bool {
@@ -161,13 +168,6 @@ func (s *symbols) substitute(r *rules) {
 	if !q.check() {
 		q.next.check()
 	}
-}
-
-func (g *Grammar) newSymbol(s *symbols) *symbols {
-	if s.isNonTerminal() {
-		return g.newSymbolFromRule(s.rule)
-	}
-	return g.newSymbolFromValue(s.value)
 }
 
 func (s *symbols) match(m *symbols) {
