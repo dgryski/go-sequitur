@@ -93,7 +93,7 @@ func (s *symbols) delete() {
 	s.p.join(s.n)
 	if !s.isGuard() {
 		s.delete_digram()
-		if s.nt() {
+		if s.isNonTerminal() {
 			s.rule().deuse()
 		}
 	}
@@ -112,10 +112,10 @@ func (s *symbols) delete_digram() {
 }
 
 func (s *symbols) isGuard() (b bool) {
-	return s.nt() && s.rule().first().prev() == s
+	return s.isNonTerminal() && s.rule().first().prev() == s
 }
 
-func (s *symbols) nt() bool {
+func (s *symbols) isNonTerminal() bool {
 	return s.r != nil
 }
 
@@ -187,13 +187,13 @@ func (s *symbols) match(m *symbols) {
 	} else {
 		r = s.g.newRules()
 
-		if s.nt() {
+		if s.isNonTerminal() {
 			r.last().insert_after(s.g.newSymbolFromRule(s.rule()))
 		} else {
 			r.last().insert_after(s.g.newSymbolFromValue(s.value()))
 		}
 
-		if s.next().nt() {
+		if s.next().isNonTerminal() {
 			r.last().insert_after(s.g.newSymbolFromRule(s.next().rule()))
 		} else {
 			r.last().insert_after(s.g.newSymbolFromValue(s.next().value()))
@@ -205,7 +205,7 @@ func (s *symbols) match(m *symbols) {
 		s.g.table.insert(r.first())
 	}
 
-	if r.first().nt() && r.first().rule().freq() == 1 {
+	if r.first().isNonTerminal() && r.first().rule().freq() == 1 {
 		r.first().expand()
 	}
 }
@@ -247,7 +247,7 @@ type Printer struct {
 
 func (pr *Printer) print(w io.Writer, r *rules) {
 	for p := r.first(); !p.isGuard(); p = p.next() {
-		if p.nt() {
+		if p.isNonTerminal() {
 			pr.printNonTerminal(w, p.rule())
 		} else {
 			pr.printTerminal(w, p.value())
