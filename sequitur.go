@@ -20,9 +20,8 @@ type Grammar struct {
 }
 
 func (g *Grammar) nextID() uint64 {
-	id := g.ruleID
 	g.ruleID++
-	return id
+	return g.ruleID
 }
 
 type rules struct {
