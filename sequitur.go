@@ -245,10 +245,8 @@ func (pr *prettyPrinter) print(w io.Writer, r *rules) error {
 			}
 		}
 	}
-	if _, err := fmt.Fprintln(w); err != nil {
-		return err
-	}
-	return nil
+	_, err := fmt.Fprintln(w)
+	return err
 }
 
 func (pr *prettyPrinter) printNonTerminal(w io.Writer, r *rules) error {
