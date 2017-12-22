@@ -211,24 +211,18 @@ type digram struct {
 type digrams map[digram]*symbols
 
 func (t digrams) lookup(s *symbols) (*symbols, bool) {
-	one := s.value
-	two := s.next.value
-	d := digram{one, two}
+	d := digram{s.value, s.next.value}
 	m, ok := t[d]
 	return m, ok
 }
 
 func (t digrams) insert(s *symbols) {
-	one := s.value
-	two := s.next.value
-	d := digram{one, two}
+	d := digram{s.value, s.next.value}
 	t[d] = s
 }
 
 func (t digrams) delete(s *symbols) {
-	one := s.value
-	two := s.next.value
-	d := digram{one, two}
+	d := digram{s.value, s.next.value}
 	if m, ok := t[d]; ok && s == m {
 		delete(t, d)
 	}
