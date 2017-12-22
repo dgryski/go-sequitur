@@ -248,37 +248,45 @@ type Printer struct {
 func (pr *Printer) print(w io.Writer, r *rules) {
 	for p := r.first(); !p.is_guard(); p = p.next() {
 		if p.nt() {
-			var i int
-
-			if idx, ok := pr.index[p.rule()]; ok {
-				i = idx
-			} else {
-				i = len(pr.rules)
-				pr.index[p.rule()] = i
-				pr.rules = append(pr.rules, p.rule())
-			}
-
-			fmt.Fprint(w, i, " ")
+			pr.printNonTerminal(w, p.rule())
 		} else {
-			if p.value() == ' ' {
-				fmt.Fprint(w, "_")
-			} else if p.value() == '\n' {
-				fmt.Fprint(w, "\\n")
-			} else if p.value() == '\t' {
-				fmt.Fprint(w, "\\t")
-			} else if p.value() == '\\' ||
-				p.value() == '(' ||
-				p.value() == ')' ||
-				p.value() == '_' ||
-				isdigit(p.value()) {
-				fmt.Fprint(w, string([]byte{'\\', byte(p.value())}))
-			} else {
-				w.Write([]byte{byte(p.value())})
-			}
-			fmt.Fprint(w, " ")
+			pr.printTerminal(w, p.value())
 		}
 	}
 	fmt.Fprintln(w)
+}
+
+func (pr *Printer) printNonTerminal(w io.Writer, r *rules) {
+	var i int
+
+	if idx, ok := pr.index[r]; ok {
+		i = idx
+	} else {
+		i = len(pr.rules)
+		pr.index[r] = i
+		pr.rules = append(pr.rules, r)
+	}
+
+	fmt.Fprint(w, i, " ")
+}
+
+func (pr *Printer) printTerminal(w io.Writer, sym uintptr) {
+	if sym == ' ' {
+		fmt.Fprint(w, "_")
+	} else if sym == '\n' {
+		fmt.Fprint(w, "\\n")
+	} else if sym == '\t' {
+		fmt.Fprint(w, "\\t")
+	} else if sym == '\\' ||
+		sym == '(' ||
+		sym == ')' ||
+		sym == '_' ||
+		isdigit(sym) {
+		fmt.Fprint(w, string([]byte{'\\', byte(sym)}))
+	} else {
+		w.Write([]byte{byte(sym)})
+	}
+	fmt.Fprint(w, " ")
 }
 
 func isdigit(c uintptr) bool { return c >= '0' && c <= '9' }
