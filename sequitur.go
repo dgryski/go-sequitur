@@ -42,10 +42,7 @@ func (g *Grammar) newRules() *rules {
 	var r rules
 
 	r.id = g.nextID()
-	r.guard = g.newSymbolFromRule(&r)
-	r.guard.pointToSelf()
-	// r.count is incremented in newSymbolFromRule, but we need to reset it to 0
-	r.count = 0
+	r.guard = g.newGuard(&r)
 
 	return &r
 }
@@ -71,6 +68,12 @@ func (g *Grammar) newSymbolFromRule(r *rules) *symbols {
 		value: r.id,
 		rule:  r,
 	}
+}
+
+func (g *Grammar) newGuard(r *rules) *symbols {
+	s := &symbols{g: g, value: r.id, rule: r}
+	s.next, s.prev = s, s
+	return s
 }
 
 func (s *symbols) join(right *symbols) {
@@ -140,8 +143,6 @@ func (s *symbols) check() bool {
 
 	return true
 }
-
-func (s *symbols) pointToSelf() { s.join(s) }
 
 func (s *symbols) expand() {
 	left := s.prev
