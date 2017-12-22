@@ -30,13 +30,8 @@ type rules struct {
 	count int
 }
 
-func (r *rules) reuse() { r.count++ }
-func (r *rules) deuse() { r.count-- }
-
 func (r *rules) first() *symbols { return r.guard.next }
 func (r *rules) last() *symbols  { return r.guard.prev }
-
-func (r *rules) freq() int { return r.count }
 
 func (g *Grammar) newRules() *rules {
 	var r rules
@@ -62,7 +57,7 @@ func (g *Grammar) newSymbolFromValue(sym uint64) *symbols {
 }
 
 func (g *Grammar) newSymbolFromRule(r *rules) *symbols {
-	r.reuse()
+	r.count++
 	return &symbols{
 		g:     g,
 		value: r.id,
@@ -101,7 +96,7 @@ func (s *symbols) delete() {
 	if !s.isGuard() {
 		s.deleteDigram()
 		if s.isNonTerminal() {
-			s.rule.deuse()
+			s.rule.count--
 		}
 	}
 }
@@ -199,7 +194,7 @@ func (s *symbols) match(m *symbols) {
 		s.g.table.insert(r.first())
 	}
 
-	if r.first().isNonTerminal() && r.first().rule.freq() == 1 {
+	if r.first().isNonTerminal() && r.first().rule.count == 1 {
 		r.first().expand()
 	}
 }
