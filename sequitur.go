@@ -91,7 +91,7 @@ func (s *symbols) join(right *symbols) {
 
 func (s *symbols) delete() {
 	s.p.join(s.n)
-	if !s.is_guard() {
+	if !s.isGuard() {
 		s.delete_digram()
 		if s.nt() {
 			s.rule().deuse()
@@ -105,13 +105,13 @@ func (s *symbols) insert_after(y *symbols) {
 }
 
 func (s *symbols) delete_digram() {
-	if s.is_guard() || s.n.is_guard() {
+	if s.isGuard() || s.n.isGuard() {
 		return
 	}
 	s.g.table.delete(s)
 }
 
-func (s *symbols) is_guard() (b bool) {
+func (s *symbols) isGuard() (b bool) {
 	return s.nt() && s.rule().first().prev() == s
 }
 
@@ -127,7 +127,7 @@ func (s *symbols) value() uintptr { return s.s }
 func (s *symbols) rule() *rules { return s.r }
 
 func (s *symbols) check() bool {
-	if s.is_guard() || s.n.is_guard() {
+	if s.isGuard() || s.n.isGuard() {
 		return false
 	}
 
@@ -181,7 +181,7 @@ func (s *symbols) match(m *symbols) {
 
 	var r *rules
 
-	if m.prev().is_guard() && m.next().next().is_guard() {
+	if m.prev().isGuard() && m.next().next().isGuard() {
 		r = m.prev().rule()
 		s.substitute(r)
 	} else {
@@ -246,7 +246,7 @@ type Printer struct {
 }
 
 func (pr *Printer) print(w io.Writer, r *rules) {
-	for p := r.first(); !p.is_guard(); p = p.next() {
+	for p := r.first(); !p.isGuard(); p = p.next() {
 		if p.nt() {
 			pr.printNonTerminal(w, p.rule())
 		} else {
