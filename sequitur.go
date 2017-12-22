@@ -35,7 +35,7 @@ func (g *Grammar) newRules() *rules {
 	var r rules
 
 	r.guard = g.newSymbolFromRule(&r)
-	r.guard.point_to_self()
+	r.guard.pointToSelf()
 	// r.count is incremented in newSymbolFromRule, but we need to reset it to 0
 	r.count = 0
 
@@ -144,7 +144,7 @@ func (s *symbols) check() bool {
 	return true
 }
 
-func (s *symbols) point_to_self() { s.join(s) }
+func (s *symbols) pointToSelf() { s.join(s) }
 
 func (s *symbols) expand() {
 	left := s.prev()
