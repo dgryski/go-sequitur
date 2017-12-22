@@ -34,12 +34,9 @@ func (r *rules) first() *symbols { return r.guard.next }
 func (r *rules) last() *symbols  { return r.guard.prev }
 
 func (g *Grammar) newRules() *rules {
-	var r rules
-
-	r.id = g.nextID()
-	r.guard = g.newGuard(&r)
-
-	return &r
+	r := &rules{id: g.nextID()}
+	r.guard = g.newGuard(r)
+	return r
 }
 
 type symbols struct {
