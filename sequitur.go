@@ -51,10 +51,6 @@ func (g *Grammar) newRules() *rules {
 	return &r
 }
 
-func (r *rules) delete() {
-	r.guard.delete()
-}
-
 type symbols struct {
 	g          *Grammar
 	next, prev *symbols
@@ -154,7 +150,6 @@ func (s *symbols) expand() {
 	f := s.rule.first()
 	l := s.rule.last()
 
-	s.rule.delete()
 	s.g.table.delete(s)
 
 	s.rule = nil
