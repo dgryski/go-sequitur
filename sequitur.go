@@ -6,6 +6,13 @@ import (
 	"unsafe"
 )
 
+type Grammar struct {
+}
+
+func NewGrammar() *Grammar {
+	return &Grammar{}
+}
+
 type rules struct {
 	guard  *symbols
 	count  int
@@ -22,10 +29,10 @@ func (r *rules) freq() int      { return r.count }
 func (r *rules) index() int     { return r.number }
 func (r *rules) setIndex(i int) { r.number = i }
 
-func newRules() *rules {
+func (g *Grammar) newRules() *rules {
 	var r rules
 
-	r.guard = newSymbolFromRule(&r)
+	r.guard = g.newSymbolFromRule(&r)
 	r.guard.point_to_self()
 	r.count = 0
 	r.number = 0
@@ -38,18 +45,19 @@ func (r *rules) delete() {
 }
 
 type symbols struct {
+	g    *Grammar
 	n, p *symbols
 	s    uintptr
 	r    *rules
 }
 
-func newSymbolFromValue(sym uintptr) *symbols {
+func (g *Grammar) newSymbolFromValue(sym uintptr) *symbols {
 	return &symbols{
 		s: sym,
 	}
 }
 
-func newSymbolFromRule(r *rules) *symbols {
+func (g *Grammar) newSymbolFromRule(r *rules) *symbols {
 	r.reuse()
 	return &symbols{
 		s: uintptr(unsafe.Pointer(r)),
@@ -160,7 +168,7 @@ func (s *symbols) substitute(r *rules) {
 	q.next().delete()
 	q.next().delete()
 
-	q.insert_after(newSymbolFromRule(r))
+	q.insert_after(s.g.newSymbolFromRule(r))
 
 	if !q.check() {
 		q.n.check()
@@ -175,18 +183,18 @@ func (s *symbols) match(m *symbols) {
 		r = m.prev().rule()
 		s.substitute(r)
 	} else {
-		r = newRules()
+		r = s.g.newRules()
 
 		if s.nt() {
-			r.last().insert_after(newSymbolFromRule(s.rule()))
+			r.last().insert_after(s.g.newSymbolFromRule(s.rule()))
 		} else {
-			r.last().insert_after(newSymbolFromValue(s.value()))
+			r.last().insert_after(s.g.newSymbolFromValue(s.value()))
 		}
 
 		if s.next().nt() {
-			r.last().insert_after(newSymbolFromRule(s.next().rule()))
+			r.last().insert_after(s.g.newSymbolFromRule(s.next().rule()))
 		} else {
-			r.last().insert_after(newSymbolFromValue(s.next().value()))
+			r.last().insert_after(s.g.newSymbolFromValue(s.next().value()))
 		}
 
 		m.substitute(r)
@@ -298,11 +306,13 @@ func ParseAndPrint(w io.Writer, str []byte) {
 	// reset global state
 	table = make(map[digram]*symbols)
 
-	S := newRules()
-	S.last().insert_after(newSymbolFromValue(uintptr(str[0])))
+	g := NewGrammar()
+
+	S := g.newRules()
+	S.last().insert_after(g.newSymbolFromValue(uintptr(str[0])))
 
 	for _, c := range str[1:] {
-		S.last().insert_after(newSymbolFromValue(uintptr(c)))
+		S.last().insert_after(g.newSymbolFromValue(uintptr(c)))
 		S.last().prev().check()
 		//	fmt.Fprintf(w, "R=%v\n", R[:Ri])
 		//	fmt.Fprintf(w, "table=%v\n", table)
