@@ -75,13 +75,8 @@ type symbols struct {
 	rule       *rules
 }
 
-func (s *symbols) isGuard() (b bool) {
-	return s.isNonTerminal() && s.rule.first().prev == s
-}
-
-func (s *symbols) isNonTerminal() bool {
-	return s.rule != nil
-}
+func (s *symbols) isGuard() (b bool)   { return s.isNonTerminal() && s.rule.first().prev == s }
+func (s *symbols) isNonTerminal() bool { return s.rule != nil }
 
 func (s *symbols) delete() {
 	s.prev.join(s.next)
