@@ -110,14 +110,6 @@ func (s *symbols) nt() bool {
 func (s *symbols) next() *symbols { return s.n }
 func (s *symbols) prev() *symbols { return s.p }
 
-func (s *symbols) raw_value() uintptr {
-
-	if s.r != nil && uintptr(s.s) != uintptr(unsafe.Pointer(s.r)) {
-		panic("s.r is non nil but s.s doesn't match")
-	}
-
-	return uintptr(s.s)
-}
 func (s *symbols) value() uintptr {
 	return uintptr(s.s)
 }
@@ -215,12 +207,12 @@ type digram struct {
 var table = map[digram]*symbols{}
 
 func find_digram(s *symbols) (*symbols, bool) {
-	one := s.raw_value()
-	two := s.next().raw_value()
+	one := s.value()
+	two := s.next().value()
 	d := digram{one, two}
 	m, ok := table[d]
 	if ok {
-		if m.raw_value() != one || m.next().raw_value() != two {
+		if m.value() != one || m.next().value() != two {
 			panic("hash table mismatch")
 		}
 	}
@@ -228,15 +220,15 @@ func find_digram(s *symbols) (*symbols, bool) {
 }
 
 func set_digram(s *symbols) {
-	one := s.raw_value()
-	two := s.next().raw_value()
+	one := s.value()
+	two := s.next().value()
 	d := digram{one, two}
 	table[d] = s
 }
 
 func delete_from_hash_table(s *symbols) {
-	one := s.raw_value()
-	two := s.next().raw_value()
+	one := s.value()
+	two := s.next().value()
 	d := digram{one, two}
 	if m, ok := table[d]; ok && s == m {
 		delete(table, d)
