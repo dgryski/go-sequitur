@@ -248,28 +248,23 @@ func delete_from_hash_table(s *symbols) {
 	}
 }
 
-var R []*rules
-var Ri int
+type Printer struct {
+	R  []*rules
+	Ri int
+}
 
-func p(w io.Writer, r *rules) {
-	var i int
-	const maxIterations = 0
+func (pr *Printer) print(w io.Writer, r *rules) {
 	for p := r.first(); !p.is_guard(); p = p.next() {
-		i++
-		if maxIterations > 0 && i > maxIterations {
-			fmt.Fprint(w, "...")
-			break
-		}
 		if p.nt() {
 			var i int
 
-			if R[p.rule().index()] == p.rule() {
+			if pr.R[p.rule().index()] == p.rule() {
 				i = p.rule().index()
 			} else {
-				i = Ri
-				p.rule().setIndex(Ri)
-				R[Ri] = p.rule()
-				Ri++
+				i = pr.Ri
+				p.rule().setIndex(pr.Ri)
+				pr.R[pr.Ri] = p.rule()
+				pr.Ri++
 			}
 
 			fmt.Fprint(w, i, " ")
@@ -298,20 +293,20 @@ func p(w io.Writer, r *rules) {
 
 func isdigit(c uintptr) bool { return c >= '0' && c <= '9' }
 
-func print(w io.Writer, r *rules) {
-	R = make([]*rules, numRules)
+func (pr *Printer) Print(w io.Writer, r *rules) {
+	pr.R = make([]*rules, numRules)
 
-	R[0] = r
-	Ri = 1
+	pr.R[0] = r
+	pr.Ri = 1
 
-	for i := 0; i < Ri; i++ {
+	for i := 0; i < pr.Ri; i++ {
 		fmt.Fprint(w, i, " -> ")
-		p(w, R[i])
+		pr.print(w, pr.R[i])
 	}
 
-	for i, v := range R {
+	for _, v := range pr.R {
 		if v != nil {
-			R[i].number = 0
+			v.number = 0
 		}
 	}
 }
@@ -333,5 +328,6 @@ func ParseAndPrint(w io.Writer, str []byte) {
 		//	print(w, S)
 	}
 
-	print(w, S)
+	var pr Printer
+	pr.Print(w, S)
 }
