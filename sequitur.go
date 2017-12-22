@@ -22,11 +22,7 @@ func (r *rules) freq() int      { return r.count }
 func (r *rules) index() int     { return r.number }
 func (r *rules) setIndex(i int) { r.number = i }
 
-var numRules int
-
 func newRules() *rules {
-	numRules++
-
 	var r rules
 
 	r.guard = newSymbolFromRule(&r)
@@ -38,7 +34,6 @@ func newRules() *rules {
 }
 
 func (r *rules) delete() {
-	numRules--
 	r.guard.delete()
 }
 
@@ -312,7 +307,6 @@ func (pr *Printer) Print(w io.Writer, r *rules) {
 func ParseAndPrint(w io.Writer, str []byte) {
 
 	// reset global state
-	numRules = 0
 	table = make(map[digram]*symbols)
 
 	S := newRules()
