@@ -57,9 +57,9 @@ func newSymbolFromRule(r *rules) *symbols {
 	}
 }
 
-func (left *symbols) join(right *symbols) {
-	if left.n != nil {
-		left.delete_digram()
+func (s *symbols) join(right *symbols) {
+	if s.n != nil {
+		s.delete_digram()
 
 		if right.p != nil && right.n != nil &&
 			right.value() == right.p.value() &&
@@ -67,14 +67,14 @@ func (left *symbols) join(right *symbols) {
 			set_digram(right)
 		}
 
-		if left.p != nil && left.n != nil &&
-			left.value() == left.n.value() &&
-			left.value() == left.p.value() {
-			set_digram(left.p)
+		if s.p != nil && s.n != nil &&
+			s.value() == s.n.value() &&
+			s.value() == s.p.value() {
+			set_digram(s.p)
 		}
 	}
-	left.n = right
-	right.p = left
+	s.n = right
+	right.p = s
 }
 
 func (s *symbols) delete() {
