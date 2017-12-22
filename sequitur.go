@@ -38,7 +38,6 @@ func (g *Grammar) newRules() *rules {
 	r.guard = g.newSymbolFromRule(&r)
 	r.guard.point_to_self()
 	r.count = 0
-	r.number = 0
 
 	return &r
 }
