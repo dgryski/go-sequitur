@@ -122,9 +122,7 @@ func (s *symbols) nt() bool {
 func (s *symbols) next() *symbols { return s.n }
 func (s *symbols) prev() *symbols { return s.p }
 
-func (s *symbols) value() uintptr {
-	return uintptr(s.s)
-}
+func (s *symbols) value() uintptr { return s.s }
 
 func (s *symbols) rule() *rules { return s.r }
 
