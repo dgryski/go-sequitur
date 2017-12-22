@@ -246,18 +246,25 @@ type Printer struct {
 	index map[*rules]int
 }
 
-func (pr *Printer) print(w io.Writer, r *rules) {
+func (pr *Printer) print(w io.Writer, r *rules) error {
 	for p := r.first(); !p.isGuard(); p = p.next() {
 		if p.isNonTerminal() {
-			pr.printNonTerminal(w, p.rule())
+			if err := pr.printNonTerminal(w, p.rule()); err != nil {
+				return err
+			}
 		} else {
-			pr.printTerminal(w, p.value())
+			if err := pr.printTerminal(w, p.value()); err != nil {
+				return err
+			}
 		}
 	}
-	fmt.Fprintln(w)
+	if _, err := fmt.Fprintln(w); err != nil {
+		return err
+	}
+	return nil
 }
 
-func (pr *Printer) printNonTerminal(w io.Writer, r *rules) {
+func (pr *Printer) printNonTerminal(w io.Writer, r *rules) error {
 	var i int
 
 	if idx, ok := pr.index[r]; ok {
@@ -268,29 +275,33 @@ func (pr *Printer) printNonTerminal(w io.Writer, r *rules) {
 		pr.rules = append(pr.rules, r)
 	}
 
-	fmt.Fprint(w, i, " ")
+	_, err := fmt.Fprint(w, i, " ")
+	return err
 }
 
-func (pr *Printer) printTerminal(w io.Writer, sym uintptr) {
-	if sym == ' ' {
-		fmt.Fprint(w, "_")
-	} else if sym == '\n' {
-		fmt.Fprint(w, "\\n")
-	} else if sym == '\t' {
-		fmt.Fprint(w, "\\t")
-	} else if sym == '\\' ||
-		sym == '(' ||
-		sym == ')' ||
-		sym == '_' ||
-		isdigit(sym) {
-		fmt.Fprint(w, string([]byte{'\\', byte(sym)}))
-	} else {
-		w.Write([]byte{byte(sym)})
+func (pr *Printer) printTerminal(w io.Writer, sym uintptr) error {
+	var out string
+
+	switch sym {
+	case ' ':
+		out = "_"
+	case '\n':
+		out = "\\n"
+	case '\t':
+		out = "\\t"
+	case '\\', '(', ')', '_', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+		out = "\\" + string(sym)
+	default:
+		if _, err := w.Write([]byte{byte(sym)}); err != nil {
+			return err
+		}
+		// leave out empty
 	}
-	fmt.Fprint(w, " ")
+
+	_, err := fmt.Fprint(w, out, " ")
+	return err
 }
 
-func isdigit(c uintptr) bool { return c >= '0' && c <= '9' }
 var ErrNoParsedGrammar = errors.New("sequitor: no parsed grammar")
 
 // Print outputs the grammar to w
@@ -306,8 +317,13 @@ func (g *Grammar) Print(w io.Writer) error {
 	}
 
 	for i := 0; i < len(pr.rules); i++ {
-		fmt.Fprint(w, i, " -> ")
-		pr.print(w, pr.rules[i])
+		if _, err := fmt.Fprint(w, i, " -> "); err != nil {
+			return err
+		}
+
+		if err := pr.print(w, pr.rules[i]); err != nil {
+			return err
+		}
 	}
 
 	return nil
