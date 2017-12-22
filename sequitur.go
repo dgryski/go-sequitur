@@ -71,7 +71,7 @@ func (g *Grammar) newSymbolFromRule(r *rules) *symbols {
 
 func (s *symbols) join(right *symbols) {
 	if s.n != nil {
-		s.delete_digram()
+		s.deleteDigram()
 
 		if right.p != nil && right.n != nil &&
 			right.value() == right.p.value() &&
@@ -92,7 +92,7 @@ func (s *symbols) join(right *symbols) {
 func (s *symbols) delete() {
 	s.p.join(s.n)
 	if !s.isGuard() {
-		s.delete_digram()
+		s.deleteDigram()
 		if s.isNonTerminal() {
 			s.rule().deuse()
 		}
@@ -104,7 +104,7 @@ func (s *symbols) insertAfter(y *symbols) {
 	s.join(y)
 }
 
-func (s *symbols) delete_digram() {
+func (s *symbols) deleteDigram() {
 	if s.isGuard() || s.n.isGuard() {
 		return
 	}
