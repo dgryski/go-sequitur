@@ -307,8 +307,12 @@ func rawPrint(w io.Writer, r *rules) error {
 	return nil
 }
 
-func (g *Grammar) Print(w io.Writer) {
-	rawPrint(w, g.base)
+// Print reconstructs the input to w
+func (g *Grammar) Print(w io.Writer) error {
+	if g.base == nil {
+		return ErrNoParsedGrammar
+	}
+	return rawPrint(w, g.base)
 }
 
 // PrettyPrint outputs the grammar to w
