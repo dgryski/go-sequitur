@@ -99,7 +99,7 @@ func (s *symbols) delete() {
 	}
 }
 
-func (s *symbols) insert_after(y *symbols) {
+func (s *symbols) insertAfter(y *symbols) {
 	y.join(s.n)
 	s.join(y)
 }
@@ -170,7 +170,7 @@ func (s *symbols) substitute(r *rules) {
 	q.next().delete()
 	q.next().delete()
 
-	q.insert_after(s.g.newSymbolFromRule(r))
+	q.insertAfter(s.g.newSymbolFromRule(r))
 
 	if !q.check() {
 		q.n.check()
@@ -188,15 +188,15 @@ func (s *symbols) match(m *symbols) {
 		r = s.g.newRules()
 
 		if s.isNonTerminal() {
-			r.last().insert_after(s.g.newSymbolFromRule(s.rule()))
+			r.last().insertAfter(s.g.newSymbolFromRule(s.rule()))
 		} else {
-			r.last().insert_after(s.g.newSymbolFromValue(s.value()))
+			r.last().insertAfter(s.g.newSymbolFromValue(s.value()))
 		}
 
 		if s.next().isNonTerminal() {
-			r.last().insert_after(s.g.newSymbolFromRule(s.next().rule()))
+			r.last().insertAfter(s.g.newSymbolFromRule(s.next().rule()))
 		} else {
-			r.last().insert_after(s.g.newSymbolFromValue(s.next().value()))
+			r.last().insertAfter(s.g.newSymbolFromValue(s.next().value()))
 		}
 
 		m.substitute(r)
@@ -313,10 +313,10 @@ func (g *Grammar) Parse(str []byte) error {
 	g.table = make(digrams)
 	g.base = g.newRules()
 
-	g.base.last().insert_after(g.newSymbolFromValue(uintptr(str[0])))
+	g.base.last().insertAfter(g.newSymbolFromValue(uintptr(str[0])))
 
 	for _, c := range str[1:] {
-		g.base.last().insert_after(g.newSymbolFromValue(uintptr(c)))
+		g.base.last().insertAfter(g.newSymbolFromValue(uintptr(c)))
 		g.base.last().prev().check()
 	}
 
