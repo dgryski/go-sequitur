@@ -1,6 +1,7 @@
 package sequitur
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"unsafe"
@@ -8,6 +9,7 @@ import (
 
 type Grammar struct {
 	table digrams
+	base  *rules
 }
 
 func NewGrammar() *Grammar {
@@ -291,10 +293,10 @@ func (pr *Printer) printTerminal(w io.Writer, sym uintptr) {
 
 func isdigit(c uintptr) bool { return c >= '0' && c <= '9' }
 
-func Print(w io.Writer, r *rules) {
+func (g *Grammar) Print(w io.Writer) {
 	pr := Printer{
 		index: make(map[*rules]int),
-		rules: []*rules{r},
+		rules: []*rules{g.base},
 	}
 
 	for i := 0; i < len(pr.rules); i++ {
@@ -303,17 +305,22 @@ func Print(w io.Writer, r *rules) {
 	}
 }
 
-func ParseAndPrint(w io.Writer, str []byte) {
+var ErrAlreadyParsed = errors.New("sequitor: grammar already parsed")
 
-	g := NewGrammar()
-
-	S := g.newRules()
-	S.last().insert_after(g.newSymbolFromValue(uintptr(str[0])))
-
-	for _, c := range str[1:] {
-		S.last().insert_after(g.newSymbolFromValue(uintptr(c)))
-		S.last().prev().check()
+func (g *Grammar) Parse(str []byte) error {
+	if g.base != nil {
+		return ErrAlreadyParsed
 	}
 
-	Print(w, S)
+	g.table = make(digrams)
+	g.base = g.newRules()
+
+	g.base.last().insert_after(g.newSymbolFromValue(uintptr(str[0])))
+
+	for _, c := range str[1:] {
+		g.base.last().insert_after(g.newSymbolFromValue(uintptr(c)))
+		g.base.last().prev().check()
+	}
+
+	return nil
 }
