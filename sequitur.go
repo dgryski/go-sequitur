@@ -163,8 +163,14 @@ func (s *symbols) substitute(r *rules) {
 	}
 }
 
-func (s *symbols) match(m *symbols) {
+func (g *Grammar) newSymbol(s *symbols) *symbols {
+	if s.isNonTerminal() {
+		return g.newSymbolFromRule(s.rule)
+	}
+	return g.newSymbolFromValue(s.value)
+}
 
+func (s *symbols) match(m *symbols) {
 	var r *rules
 
 	if m.prev.isGuard() && m.next.next.isGuard() {
@@ -173,17 +179,8 @@ func (s *symbols) match(m *symbols) {
 	} else {
 		r = s.g.newRules()
 
-		if s.isNonTerminal() {
-			r.last().insertAfter(s.g.newSymbolFromRule(s.rule))
-		} else {
-			r.last().insertAfter(s.g.newSymbolFromValue(s.value))
-		}
-
-		if s.next.isNonTerminal() {
-			r.last().insertAfter(s.g.newSymbolFromRule(s.next.rule))
-		} else {
-			r.last().insertAfter(s.g.newSymbolFromValue(s.next.value))
-		}
+		r.last().insertAfter(s.g.newSymbol(s))
+		r.last().insertAfter(s.g.newSymbol(s.next))
 
 		m.substitute(r)
 		s.substitute(r)
