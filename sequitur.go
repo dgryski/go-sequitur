@@ -152,9 +152,6 @@ func (s *symbols) expand() {
 
 	s.g.table.delete(s)
 
-	s.rule = nil
-	s.delete()
-
 	left.join(f)
 	l.join(right)
 
