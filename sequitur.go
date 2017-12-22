@@ -241,8 +241,8 @@ func (t digrams) delete(s *symbols) {
 }
 
 type Printer struct {
-	R       []*rules
-	numbers map[*rules]int
+	rules []*rules
+	index map[*rules]int
 }
 
 func (pr *Printer) print(w io.Writer, r *rules) {
@@ -250,12 +250,12 @@ func (pr *Printer) print(w io.Writer, r *rules) {
 		if p.nt() {
 			var i int
 
-			if idx, ok := pr.numbers[p.rule()]; ok {
+			if idx, ok := pr.index[p.rule()]; ok {
 				i = idx
 			} else {
-				i = len(pr.R)
-				pr.numbers[p.rule()] = i
-				pr.R = append(pr.R, p.rule())
+				i = len(pr.rules)
+				pr.index[p.rule()] = i
+				pr.rules = append(pr.rules, p.rule())
 			}
 
 			fmt.Fprint(w, i, " ")
@@ -285,12 +285,12 @@ func (pr *Printer) print(w io.Writer, r *rules) {
 func isdigit(c uintptr) bool { return c >= '0' && c <= '9' }
 
 func (pr *Printer) Print(w io.Writer, r *rules) {
-	pr.numbers = make(map[*rules]int)
-	pr.R = []*rules{r}
+	pr.index = make(map[*rules]int)
+	pr.rules = []*rules{r}
 
-	for i := 0; i < len(pr.R); i++ {
+	for i := 0; i < len(pr.rules); i++ {
 		fmt.Fprint(w, i, " -> ")
-		pr.print(w, pr.R[i])
+		pr.print(w, pr.rules[i])
 	}
 }
 
