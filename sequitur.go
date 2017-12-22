@@ -17,9 +17,8 @@ func NewGrammar() *Grammar {
 }
 
 type rules struct {
-	guard  *symbols
-	count  int
-	number int
+	guard *symbols
+	count int
 }
 
 func (r *rules) reuse() { r.count++ }
@@ -28,9 +27,7 @@ func (r *rules) deuse() { r.count-- }
 func (r *rules) first() *symbols { return r.guard.next() }
 func (r *rules) last() *symbols  { return r.guard.prev() }
 
-func (r *rules) freq() int      { return r.count }
-func (r *rules) index() int     { return r.number }
-func (r *rules) setIndex(i int) { r.number = i }
+func (r *rules) freq() int { return r.count }
 
 func (g *Grammar) newRules() *rules {
 	var r rules
@@ -244,8 +241,9 @@ func (t digrams) delete(s *symbols) {
 }
 
 type Printer struct {
-	R  []*rules
-	Ri int
+	R       []*rules
+	Ri      int
+	numbers map[*rules]int
 }
 
 func (pr *Printer) print(w io.Writer, r *rules) {
@@ -253,11 +251,11 @@ func (pr *Printer) print(w io.Writer, r *rules) {
 		if p.nt() {
 			var i int
 
-			if p.rule().index() < len(pr.R) && pr.R[p.rule().index()] == p.rule() {
-				i = p.rule().index()
+			if idx, ok := pr.numbers[p.rule()]; ok {
+				i = idx
 			} else {
 				i = pr.Ri
-				p.rule().setIndex(pr.Ri)
+				pr.numbers[p.rule()] = pr.Ri
 				pr.R = append(pr.R, p.rule())
 				pr.Ri++
 			}
@@ -289,18 +287,13 @@ func (pr *Printer) print(w io.Writer, r *rules) {
 func isdigit(c uintptr) bool { return c >= '0' && c <= '9' }
 
 func (pr *Printer) Print(w io.Writer, r *rules) {
+	pr.numbers = make(map[*rules]int)
 	pr.R = []*rules{r}
 	pr.Ri = 1
 
 	for i := 0; i < pr.Ri; i++ {
 		fmt.Fprint(w, i, " -> ")
 		pr.print(w, pr.R[i])
-	}
-
-	for _, v := range pr.R {
-		if v != nil {
-			v.number = 0
-		}
 	}
 }
 
