@@ -37,6 +37,7 @@ func (g *Grammar) newRules() *rules {
 
 	r.guard = g.newSymbolFromRule(&r)
 	r.guard.point_to_self()
+	// r.count is incremented in newSymbolFromRule, but we need to reset it to 0
 	r.count = 0
 
 	return &r
