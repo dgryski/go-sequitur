@@ -228,12 +228,12 @@ func (t digrams) delete(s *symbols) {
 	}
 }
 
-type Printer struct {
+type printer struct {
 	rules []*rules
 	index map[*rules]int
 }
 
-func (pr *Printer) print(w io.Writer, r *rules) error {
+func (pr *printer) print(w io.Writer, r *rules) error {
 	for p := r.first(); !p.isGuard(); p = p.next {
 		if p.isNonTerminal() {
 			if err := pr.printNonTerminal(w, p.rule); err != nil {
@@ -251,7 +251,7 @@ func (pr *Printer) print(w io.Writer, r *rules) error {
 	return nil
 }
 
-func (pr *Printer) printNonTerminal(w io.Writer, r *rules) error {
+func (pr *printer) printNonTerminal(w io.Writer, r *rules) error {
 	var i int
 
 	if idx, ok := pr.index[r]; ok {
@@ -266,7 +266,7 @@ func (pr *Printer) printNonTerminal(w io.Writer, r *rules) error {
 	return err
 }
 
-func (pr *Printer) printTerminal(w io.Writer, sym uintptr) error {
+func (pr *printer) printTerminal(w io.Writer, sym uintptr) error {
 	var out string
 
 	switch sym {
@@ -298,7 +298,7 @@ func (g *Grammar) Print(w io.Writer) error {
 		return ErrNoParsedGrammar
 	}
 
-	pr := Printer{
+	pr := printer{
 		index: make(map[*rules]int),
 		rules: []*rules{g.base},
 	}
