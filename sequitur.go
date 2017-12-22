@@ -51,7 +51,7 @@ type symbols struct {
 	g          *Grammar
 	next, prev *symbols
 	value      uintptr
-	r          *rules
+	rule       *rules
 }
 
 func (g *Grammar) newSymbolFromValue(sym uintptr) *symbols {
@@ -66,7 +66,7 @@ func (g *Grammar) newSymbolFromRule(r *rules) *symbols {
 	return &symbols{
 		g:     g,
 		value: uintptr(unsafe.Pointer(r)),
-		r:     r,
+		rule:  r,
 	}
 }
 
@@ -95,7 +95,7 @@ func (s *symbols) delete() {
 	if !s.isGuard() {
 		s.deleteDigram()
 		if s.isNonTerminal() {
-			s.rule().deuse()
+			s.rule.deuse()
 		}
 	}
 }
@@ -113,14 +113,12 @@ func (s *symbols) deleteDigram() {
 }
 
 func (s *symbols) isGuard() (b bool) {
-	return s.isNonTerminal() && s.rule().first().prev == s
+	return s.isNonTerminal() && s.rule.first().prev == s
 }
 
 func (s *symbols) isNonTerminal() bool {
-	return s.r != nil
+	return s.rule != nil
 }
-
-func (s *symbols) rule() *rules { return s.r }
 
 func (s *symbols) check() bool {
 	if s.isGuard() || s.next.isGuard() {
@@ -145,13 +143,13 @@ func (s *symbols) pointToSelf() { s.join(s) }
 func (s *symbols) expand() {
 	left := s.prev
 	right := s.next
-	f := s.rule().first()
-	l := s.rule().last()
+	f := s.rule.first()
+	l := s.rule.last()
 
-	s.rule().delete()
+	s.rule.delete()
 	s.g.table.delete(s)
 
-	s.r = nil
+	s.rule = nil
 	s.delete()
 
 	left.join(f)
@@ -178,19 +176,19 @@ func (s *symbols) match(m *symbols) {
 	var r *rules
 
 	if m.prev.isGuard() && m.next.next.isGuard() {
-		r = m.prev.rule()
+		r = m.prev.rule
 		s.substitute(r)
 	} else {
 		r = s.g.newRules()
 
 		if s.isNonTerminal() {
-			r.last().insertAfter(s.g.newSymbolFromRule(s.rule()))
+			r.last().insertAfter(s.g.newSymbolFromRule(s.rule))
 		} else {
 			r.last().insertAfter(s.g.newSymbolFromValue(s.value))
 		}
 
 		if s.next.isNonTerminal() {
-			r.last().insertAfter(s.g.newSymbolFromRule(s.next.rule()))
+			r.last().insertAfter(s.g.newSymbolFromRule(s.next.rule))
 		} else {
 			r.last().insertAfter(s.g.newSymbolFromValue(s.next.value))
 		}
@@ -201,7 +199,7 @@ func (s *symbols) match(m *symbols) {
 		s.g.table.insert(r.first())
 	}
 
-	if r.first().isNonTerminal() && r.first().rule().freq() == 1 {
+	if r.first().isNonTerminal() && r.first().rule.freq() == 1 {
 		r.first().expand()
 	}
 }
@@ -244,7 +242,7 @@ type Printer struct {
 func (pr *Printer) print(w io.Writer, r *rules) error {
 	for p := r.first(); !p.isGuard(); p = p.next {
 		if p.isNonTerminal() {
-			if err := pr.printNonTerminal(w, p.rule()); err != nil {
+			if err := pr.printNonTerminal(w, p.rule); err != nil {
 				return err
 			}
 		} else {
