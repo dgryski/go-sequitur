@@ -242,7 +242,6 @@ func (t digrams) delete(s *symbols) {
 
 type Printer struct {
 	R       []*rules
-	Ri      int
 	numbers map[*rules]int
 }
 
@@ -254,10 +253,9 @@ func (pr *Printer) print(w io.Writer, r *rules) {
 			if idx, ok := pr.numbers[p.rule()]; ok {
 				i = idx
 			} else {
-				i = pr.Ri
-				pr.numbers[p.rule()] = pr.Ri
+				i = len(pr.R)
+				pr.numbers[p.rule()] = i
 				pr.R = append(pr.R, p.rule())
-				pr.Ri++
 			}
 
 			fmt.Fprint(w, i, " ")
@@ -289,9 +287,8 @@ func isdigit(c uintptr) bool { return c >= '0' && c <= '9' }
 func (pr *Printer) Print(w io.Writer, r *rules) {
 	pr.numbers = make(map[*rules]int)
 	pr.R = []*rules{r}
-	pr.Ri = 1
 
-	for i := 0; i < pr.Ri; i++ {
+	for i := 0; i < len(pr.R); i++ {
 		fmt.Fprint(w, i, " -> ")
 		pr.print(w, pr.R[i])
 	}
