@@ -228,12 +228,12 @@ func (t digrams) delete(s *symbols) {
 	}
 }
 
-type printer struct {
+type prettyPrinter struct {
 	rules []*rules
 	index map[*rules]int
 }
 
-func (pr *printer) print(w io.Writer, r *rules) error {
+func (pr *prettyPrinter) print(w io.Writer, r *rules) error {
 	for p := r.first(); !p.isGuard(); p = p.next {
 		if p.isNonTerminal() {
 			if err := pr.printNonTerminal(w, p.rule); err != nil {
@@ -251,7 +251,7 @@ func (pr *printer) print(w io.Writer, r *rules) error {
 	return nil
 }
 
-func (pr *printer) printNonTerminal(w io.Writer, r *rules) error {
+func (pr *prettyPrinter) printNonTerminal(w io.Writer, r *rules) error {
 	var i int
 
 	if idx, ok := pr.index[r]; ok {
@@ -266,7 +266,7 @@ func (pr *printer) printNonTerminal(w io.Writer, r *rules) error {
 	return err
 }
 
-func (pr *printer) printTerminal(w io.Writer, sym uintptr) error {
+func (pr *prettyPrinter) printTerminal(w io.Writer, sym uintptr) error {
 	var out string
 
 	switch sym {
@@ -292,13 +292,13 @@ func (pr *printer) printTerminal(w io.Writer, sym uintptr) error {
 var ErrNoParsedGrammar = errors.New("sequitor: no parsed grammar")
 
 // Print outputs the grammar to w
-func (g *Grammar) Print(w io.Writer) error {
+func (g *Grammar) PrettyPrint(w io.Writer) error {
 
 	if g.base == nil {
 		return ErrNoParsedGrammar
 	}
 
-	pr := printer{
+	pr := prettyPrinter{
 		index: make(map[*rules]int),
 		rules: []*rules{g.base},
 	}
