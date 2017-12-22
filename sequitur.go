@@ -7,15 +7,10 @@ import (
 	"unsafe"
 )
 
+// Grammar is a constructed grammar.  The zero value is safe to call Parse on.
 type Grammar struct {
 	table digrams
 	base  *rules
-}
-
-func NewGrammar() *Grammar {
-	return &Grammar{
-		table: make(digrams),
-	}
 }
 
 type rules struct {
@@ -290,8 +285,15 @@ func (pr *Printer) printTerminal(w io.Writer, sym uintptr) {
 }
 
 func isdigit(c uintptr) bool { return c >= '0' && c <= '9' }
+var ErrNoParsedGrammar = errors.New("sequitor: no parsed grammar")
 
-func (g *Grammar) Print(w io.Writer) {
+// Print outputs the grammar to w
+func (g *Grammar) Print(w io.Writer) error {
+
+	if g.base == nil {
+		return ErrNoParsedGrammar
+	}
+
 	pr := Printer{
 		index: make(map[*rules]int),
 		rules: []*rules{g.base},
@@ -301,10 +303,14 @@ func (g *Grammar) Print(w io.Writer) {
 		fmt.Fprint(w, i, " -> ")
 		pr.print(w, pr.rules[i])
 	}
+
+	return nil
 }
 
+// ErrAlreadyParsed is returned if the grammar instance has already parsed a grammar
 var ErrAlreadyParsed = errors.New("sequitor: grammar already parsed")
 
+// Parse parses a byte string
 func (g *Grammar) Parse(str []byte) error {
 	if g.base != nil {
 		return ErrAlreadyParsed
