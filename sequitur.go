@@ -274,7 +274,6 @@ func (pr *Printer) print(w io.Writer, r *rules) {
 				fmt.Fprint(w, string([]byte{'\\', byte(p.value())}))
 			} else {
 				w.Write([]byte{byte(p.value())})
-				//fmt.Fprintf(w, "%s", string(byte(p.value())))
 			}
 			fmt.Fprint(w, " ")
 		}
