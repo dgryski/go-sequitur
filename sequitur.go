@@ -10,16 +10,23 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"unsafe"
 )
 
 // Grammar is a constructed grammar.  The zero value is safe to call Parse on.
 type Grammar struct {
-	table digrams
-	base  *rules
+	table  digrams
+	base   *rules
+	ruleID uint64
+}
+
+func (g *Grammar) nextID() uint64 {
+	id := g.ruleID
+	g.ruleID++
+	return id
 }
 
 type rules struct {
+	id    uint64
 	guard *symbols
 	count int
 }
@@ -35,6 +42,7 @@ func (r *rules) freq() int { return r.count }
 func (g *Grammar) newRules() *rules {
 	var r rules
 
+	r.id = g.nextID()
 	r.guard = g.newSymbolFromRule(&r)
 	r.guard.pointToSelf()
 	// r.count is incremented in newSymbolFromRule, but we need to reset it to 0
@@ -50,11 +58,11 @@ func (r *rules) delete() {
 type symbols struct {
 	g          *Grammar
 	next, prev *symbols
-	value      uintptr
+	value      uint64
 	rule       *rules
 }
 
-func (g *Grammar) newSymbolFromValue(sym uintptr) *symbols {
+func (g *Grammar) newSymbolFromValue(sym uint64) *symbols {
 	return &symbols{
 		g:     g,
 		value: sym,
@@ -65,7 +73,7 @@ func (g *Grammar) newSymbolFromRule(r *rules) *symbols {
 	r.reuse()
 	return &symbols{
 		g:     g,
-		value: uintptr(unsafe.Pointer(r)),
+		value: r.id,
 		rule:  r,
 	}
 }
@@ -205,7 +213,7 @@ func (s *symbols) match(m *symbols) {
 }
 
 type digram struct {
-	one, two uintptr
+	one, two uint64
 }
 
 type digrams map[digram]*symbols
@@ -266,7 +274,7 @@ func (pr *prettyPrinter) printNonTerminal(w io.Writer, r *rules) error {
 	return err
 }
 
-func (pr *prettyPrinter) printTerminal(w io.Writer, sym uintptr) error {
+func (pr *prettyPrinter) printTerminal(w io.Writer, sym uint64) error {
 	var out string
 
 	switch sym {
@@ -349,13 +357,14 @@ func (g *Grammar) Parse(str []byte) error {
 		return ErrAlreadyParsed
 	}
 
+	g.ruleID = 256
 	g.table = make(digrams)
 	g.base = g.newRules()
 
-	g.base.last().insertAfter(g.newSymbolFromValue(uintptr(str[0])))
+	g.base.last().insertAfter(g.newSymbolFromValue(uint64(str[0])))
 
 	for _, c := range str[1:] {
-		g.base.last().insertAfter(g.newSymbolFromValue(uintptr(c)))
+		g.base.last().insertAfter(g.newSymbolFromValue(uint64(c)))
 		g.base.last().prev.check()
 	}
 
