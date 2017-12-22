@@ -291,9 +291,11 @@ func (pr *Printer) printTerminal(w io.Writer, sym uintptr) {
 
 func isdigit(c uintptr) bool { return c >= '0' && c <= '9' }
 
-func (pr *Printer) Print(w io.Writer, r *rules) {
-	pr.index = make(map[*rules]int)
-	pr.rules = []*rules{r}
+func Print(w io.Writer, r *rules) {
+	pr := Printer{
+		index: make(map[*rules]int),
+		rules: []*rules{r},
+	}
 
 	for i := 0; i < len(pr.rules); i++ {
 		fmt.Fprint(w, i, " -> ")
@@ -313,6 +315,5 @@ func ParseAndPrint(w io.Writer, str []byte) {
 		S.last().prev().check()
 	}
 
-	var pr Printer
-	pr.Print(w, S)
+	Print(w, S)
 }
