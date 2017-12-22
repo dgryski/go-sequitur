@@ -193,9 +193,7 @@ func (s *symbols) match(m *symbols) {
 	}
 }
 
-type digram struct {
-	one, two uint64
-}
+type digram struct{ one, two uint64 }
 
 type digrams map[digram]*symbols
 
