@@ -211,11 +211,6 @@ func find_digram(s *symbols) (*symbols, bool) {
 	two := s.next().value()
 	d := digram{one, two}
 	m, ok := table[d]
-	if ok {
-		if m.value() != one || m.next().value() != two {
-			panic("hash table mismatch")
-		}
-	}
 	return m, ok
 }
 
