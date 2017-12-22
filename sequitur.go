@@ -48,25 +48,25 @@ func (r *rules) delete() {
 }
 
 type symbols struct {
-	g    *Grammar
-	n, p *symbols
-	s    uintptr
-	r    *rules
+	g     *Grammar
+	n, p  *symbols
+	value uintptr
+	r     *rules
 }
 
 func (g *Grammar) newSymbolFromValue(sym uintptr) *symbols {
 	return &symbols{
-		g: g,
-		s: sym,
+		g:     g,
+		value: sym,
 	}
 }
 
 func (g *Grammar) newSymbolFromRule(r *rules) *symbols {
 	r.reuse()
 	return &symbols{
-		g: g,
-		s: uintptr(unsafe.Pointer(r)),
-		r: r,
+		g:     g,
+		value: uintptr(unsafe.Pointer(r)),
+		r:     r,
 	}
 }
 
@@ -75,14 +75,14 @@ func (s *symbols) join(right *symbols) {
 		s.deleteDigram()
 
 		if right.p != nil && right.n != nil &&
-			right.value() == right.p.value() &&
-			right.value() == right.n.value() {
+			right.value == right.p.value &&
+			right.value == right.n.value {
 			s.g.table.insert(right)
 		}
 
 		if s.p != nil && s.n != nil &&
-			s.value() == s.n.value() &&
-			s.value() == s.p.value() {
+			s.value == s.n.value &&
+			s.value == s.p.value {
 			s.g.table.insert(s.p)
 		}
 	}
@@ -122,8 +122,6 @@ func (s *symbols) isNonTerminal() bool {
 
 func (s *symbols) next() *symbols { return s.n }
 func (s *symbols) prev() *symbols { return s.p }
-
-func (s *symbols) value() uintptr { return s.s }
 
 func (s *symbols) rule() *rules { return s.r }
 
@@ -191,13 +189,13 @@ func (s *symbols) match(m *symbols) {
 		if s.isNonTerminal() {
 			r.last().insertAfter(s.g.newSymbolFromRule(s.rule()))
 		} else {
-			r.last().insertAfter(s.g.newSymbolFromValue(s.value()))
+			r.last().insertAfter(s.g.newSymbolFromValue(s.value))
 		}
 
 		if s.next().isNonTerminal() {
 			r.last().insertAfter(s.g.newSymbolFromRule(s.next().rule()))
 		} else {
-			r.last().insertAfter(s.g.newSymbolFromValue(s.next().value()))
+			r.last().insertAfter(s.g.newSymbolFromValue(s.next().value))
 		}
 
 		m.substitute(r)
@@ -218,23 +216,23 @@ type digram struct {
 type digrams map[digram]*symbols
 
 func (t digrams) lookup(s *symbols) (*symbols, bool) {
-	one := s.value()
-	two := s.next().value()
+	one := s.value
+	two := s.next().value
 	d := digram{one, two}
 	m, ok := t[d]
 	return m, ok
 }
 
 func (t digrams) insert(s *symbols) {
-	one := s.value()
-	two := s.next().value()
+	one := s.value
+	two := s.next().value
 	d := digram{one, two}
 	t[d] = s
 }
 
 func (t digrams) delete(s *symbols) {
-	one := s.value()
-	two := s.next().value()
+	one := s.value
+	two := s.next().value
 	d := digram{one, two}
 	if m, ok := t[d]; ok && s == m {
 		delete(t, d)
@@ -253,7 +251,7 @@ func (pr *Printer) print(w io.Writer, r *rules) error {
 				return err
 			}
 		} else {
-			if err := pr.printTerminal(w, p.value()); err != nil {
+			if err := pr.printTerminal(w, p.value); err != nil {
 				return err
 			}
 		}
