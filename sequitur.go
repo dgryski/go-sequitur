@@ -258,12 +258,12 @@ func (pr *Printer) print(w io.Writer, r *rules) {
 		if p.nt() {
 			var i int
 
-			if pr.R[p.rule().index()] == p.rule() {
+			if p.rule().index() < len(pr.R) && pr.R[p.rule().index()] == p.rule() {
 				i = p.rule().index()
 			} else {
 				i = pr.Ri
 				p.rule().setIndex(pr.Ri)
-				pr.R[pr.Ri] = p.rule()
+				pr.R = append(pr.R, p.rule())
 				pr.Ri++
 			}
 
@@ -294,9 +294,7 @@ func (pr *Printer) print(w io.Writer, r *rules) {
 func isdigit(c uintptr) bool { return c >= '0' && c <= '9' }
 
 func (pr *Printer) Print(w io.Writer, r *rules) {
-	pr.R = make([]*rules, numRules)
-
-	pr.R[0] = r
+	pr.R = []*rules{r}
 	pr.Ri = 1
 
 	for i := 0; i < pr.Ri; i++ {
