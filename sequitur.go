@@ -27,8 +27,8 @@ type rules struct {
 func (r *rules) reuse() { r.count++ }
 func (r *rules) deuse() { r.count-- }
 
-func (r *rules) first() *symbols { return r.guard.next() }
-func (r *rules) last() *symbols  { return r.guard.prev() }
+func (r *rules) first() *symbols { return r.guard.next }
+func (r *rules) last() *symbols  { return r.guard.prev }
 
 func (r *rules) freq() int { return r.count }
 
@@ -48,10 +48,10 @@ func (r *rules) delete() {
 }
 
 type symbols struct {
-	g     *Grammar
-	n, p  *symbols
-	value uintptr
-	r     *rules
+	g          *Grammar
+	next, prev *symbols
+	value      uintptr
+	r          *rules
 }
 
 func (g *Grammar) newSymbolFromValue(sym uintptr) *symbols {
@@ -71,27 +71,27 @@ func (g *Grammar) newSymbolFromRule(r *rules) *symbols {
 }
 
 func (s *symbols) join(right *symbols) {
-	if s.n != nil {
+	if s.next != nil {
 		s.deleteDigram()
 
-		if right.p != nil && right.n != nil &&
-			right.value == right.p.value &&
-			right.value == right.n.value {
+		if right.prev != nil && right.next != nil &&
+			right.value == right.prev.value &&
+			right.value == right.next.value {
 			s.g.table.insert(right)
 		}
 
-		if s.p != nil && s.n != nil &&
-			s.value == s.n.value &&
-			s.value == s.p.value {
-			s.g.table.insert(s.p)
+		if s.prev != nil && s.next != nil &&
+			s.value == s.next.value &&
+			s.value == s.prev.value {
+			s.g.table.insert(s.prev)
 		}
 	}
-	s.n = right
-	right.p = s
+	s.next = right
+	right.prev = s
 }
 
 func (s *symbols) delete() {
-	s.p.join(s.n)
+	s.prev.join(s.next)
 	if !s.isGuard() {
 		s.deleteDigram()
 		if s.isNonTerminal() {
@@ -101,32 +101,29 @@ func (s *symbols) delete() {
 }
 
 func (s *symbols) insertAfter(y *symbols) {
-	y.join(s.n)
+	y.join(s.next)
 	s.join(y)
 }
 
 func (s *symbols) deleteDigram() {
-	if s.isGuard() || s.n.isGuard() {
+	if s.isGuard() || s.next.isGuard() {
 		return
 	}
 	s.g.table.delete(s)
 }
 
 func (s *symbols) isGuard() (b bool) {
-	return s.isNonTerminal() && s.rule().first().prev() == s
+	return s.isNonTerminal() && s.rule().first().prev == s
 }
 
 func (s *symbols) isNonTerminal() bool {
 	return s.r != nil
 }
 
-func (s *symbols) next() *symbols { return s.n }
-func (s *symbols) prev() *symbols { return s.p }
-
 func (s *symbols) rule() *rules { return s.r }
 
 func (s *symbols) check() bool {
-	if s.isGuard() || s.n.isGuard() {
+	if s.isGuard() || s.next.isGuard() {
 		return false
 	}
 
@@ -136,7 +133,7 @@ func (s *symbols) check() bool {
 		return false
 	}
 
-	if x.next() != s {
+	if x.next != s {
 		s.match(x)
 	}
 
@@ -146,8 +143,8 @@ func (s *symbols) check() bool {
 func (s *symbols) pointToSelf() { s.join(s) }
 
 func (s *symbols) expand() {
-	left := s.prev()
-	right := s.next()
+	left := s.prev
+	right := s.next
 	f := s.rule().first()
 	l := s.rule().last()
 
@@ -164,15 +161,15 @@ func (s *symbols) expand() {
 }
 
 func (s *symbols) substitute(r *rules) {
-	q := s.p
+	q := s.prev
 
-	q.next().delete()
-	q.next().delete()
+	q.next.delete()
+	q.next.delete()
 
 	q.insertAfter(s.g.newSymbolFromRule(r))
 
 	if !q.check() {
-		q.n.check()
+		q.next.check()
 	}
 }
 
@@ -180,8 +177,8 @@ func (s *symbols) match(m *symbols) {
 
 	var r *rules
 
-	if m.prev().isGuard() && m.next().next().isGuard() {
-		r = m.prev().rule()
+	if m.prev.isGuard() && m.next.next.isGuard() {
+		r = m.prev.rule()
 		s.substitute(r)
 	} else {
 		r = s.g.newRules()
@@ -192,10 +189,10 @@ func (s *symbols) match(m *symbols) {
 			r.last().insertAfter(s.g.newSymbolFromValue(s.value))
 		}
 
-		if s.next().isNonTerminal() {
-			r.last().insertAfter(s.g.newSymbolFromRule(s.next().rule()))
+		if s.next.isNonTerminal() {
+			r.last().insertAfter(s.g.newSymbolFromRule(s.next.rule()))
 		} else {
-			r.last().insertAfter(s.g.newSymbolFromValue(s.next().value))
+			r.last().insertAfter(s.g.newSymbolFromValue(s.next.value))
 		}
 
 		m.substitute(r)
@@ -217,7 +214,7 @@ type digrams map[digram]*symbols
 
 func (t digrams) lookup(s *symbols) (*symbols, bool) {
 	one := s.value
-	two := s.next().value
+	two := s.next.value
 	d := digram{one, two}
 	m, ok := t[d]
 	return m, ok
@@ -225,14 +222,14 @@ func (t digrams) lookup(s *symbols) (*symbols, bool) {
 
 func (t digrams) insert(s *symbols) {
 	one := s.value
-	two := s.next().value
+	two := s.next.value
 	d := digram{one, two}
 	t[d] = s
 }
 
 func (t digrams) delete(s *symbols) {
 	one := s.value
-	two := s.next().value
+	two := s.next.value
 	d := digram{one, two}
 	if m, ok := t[d]; ok && s == m {
 		delete(t, d)
@@ -245,7 +242,7 @@ type Printer struct {
 }
 
 func (pr *Printer) print(w io.Writer, r *rules) error {
-	for p := r.first(); !p.isGuard(); p = p.next() {
+	for p := r.first(); !p.isGuard(); p = p.next {
 		if p.isNonTerminal() {
 			if err := pr.printNonTerminal(w, p.rule()); err != nil {
 				return err
@@ -343,7 +340,7 @@ func (g *Grammar) Parse(str []byte) error {
 
 	for _, c := range str[1:] {
 		g.base.last().insertAfter(g.newSymbolFromValue(uintptr(c)))
-		g.base.last().prev().check()
+		g.base.last().prev.check()
 	}
 
 	return nil
