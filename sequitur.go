@@ -128,7 +128,7 @@ func (s *symbols) check() bool {
 	}
 
 	if x.next() != s {
-		match(s, x)
+		s.match(x)
 	}
 
 	return true
@@ -167,30 +167,30 @@ func (s *symbols) substitute(r *rules) {
 	}
 }
 
-func match(ss, m *symbols) {
+func (s *symbols) match(m *symbols) {
 
 	var r *rules
 
 	if m.prev().is_guard() && m.next().next().is_guard() {
 		r = m.prev().rule()
-		ss.substitute(r)
+		s.substitute(r)
 	} else {
 		r = newRules()
 
-		if ss.nt() {
-			r.last().insert_after(newSymbolFromRule(ss.rule()))
+		if s.nt() {
+			r.last().insert_after(newSymbolFromRule(s.rule()))
 		} else {
-			r.last().insert_after(newSymbolFromValue(ss.value()))
+			r.last().insert_after(newSymbolFromValue(s.value()))
 		}
 
-		if ss.next().nt() {
-			r.last().insert_after(newSymbolFromRule(ss.next().rule()))
+		if s.next().nt() {
+			r.last().insert_after(newSymbolFromRule(s.next().rule()))
 		} else {
-			r.last().insert_after(newSymbolFromValue(ss.next().value()))
+			r.last().insert_after(newSymbolFromValue(s.next().value()))
 		}
 
 		m.substitute(r)
-		ss.substitute(r)
+		s.substitute(r)
 
 		table.insert(r.first())
 	}
