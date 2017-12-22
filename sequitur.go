@@ -291,6 +291,25 @@ func (pr *prettyPrinter) printTerminal(w io.Writer, sym uintptr) error {
 
 var ErrNoParsedGrammar = errors.New("sequitor: no parsed grammar")
 
+func rawPrint(w io.Writer, r *rules) error {
+	for p := r.first(); !p.isGuard(); p = p.next {
+		if p.isNonTerminal() {
+			if err := rawPrint(w, p.rule); err != nil {
+				return err
+			}
+		} else {
+			if _, err := w.Write([]byte{byte(p.value)}); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (g *Grammar) Print(w io.Writer) {
+	rawPrint(w, g.base)
+}
+
 // Print outputs the grammar to w
 func (g *Grammar) PrettyPrint(w io.Writer) error {
 
