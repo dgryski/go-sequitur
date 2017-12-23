@@ -89,19 +89,21 @@ func (s *symbols) delete() {
 	}
 }
 
+func (s *symbols) isTriple() bool {
+	return s.prev != nil && s.next != nil &&
+		s.value == s.prev.value &&
+		s.value == s.next.value
+}
+
 func (s *symbols) join(right *symbols) {
 	if s.next != nil {
 		s.deleteDigram()
 
-		if right.prev != nil && right.next != nil &&
-			right.value == right.prev.value &&
-			right.value == right.next.value {
+		if right.isTriple() {
 			s.g.table.insert(right)
 		}
 
-		if s.prev != nil && s.next != nil &&
-			s.value == s.next.value &&
-			s.value == s.prev.value {
+		if s.isTriple() {
 			s.g.table.insert(s.prev)
 		}
 	}
