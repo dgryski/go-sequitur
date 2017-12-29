@@ -80,9 +80,6 @@ func (s *symbols) isNonTerminal() bool { return s.rule != nil }
 
 func (s *symbols) delete() {
 	s.prev.join(s.next)
-	if s.isGuard() {
-		return
-	}
 	s.deleteDigram()
 	if s.isNonTerminal() {
 		s.rule.count--
