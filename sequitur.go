@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"unicode/utf8"
 )
 
 // Grammar is a constructed grammar.  The zero value is safe to call Parse on.
@@ -259,7 +260,7 @@ func (pr *prettyPrinter) printTerminal(w io.Writer, sym uint64) error {
 	case '\\', '(', ')', '_', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
 		out = "\\" + string(sym)
 	default:
-		if _, err := w.Write([]byte{byte(sym)}); err != nil {
+		if _, err := w.Write([]byte(string(rune(sym)))); err != nil {
 			return err
 		}
 		// leave out empty
@@ -279,7 +280,9 @@ func rawPrint(w io.Writer, r *rules) error {
 				return err
 			}
 		} else {
-			if _, err := w.Write([]byte{byte(p.value)}); err != nil {
+			rb := make([]byte, utf8.UTFMax)
+			sz := utf8.EncodeRune(rb, rune(p.value))
+			if _, err := w.Write(rb[:sz]); err != nil {
 				return err
 			}
 		}
@@ -326,7 +329,7 @@ var ErrAlreadyParsed = errors.New("sequitor: grammar already parsed")
 // ErrEmptyInput is returned if the input string is empty
 var ErrEmptyInput = errors.New("sequitor: empty input")
 
-// Parse parses a byte string
+// Parse parses a byte string using utf-8 encoding
 func (g *Grammar) Parse(str []byte) error {
 	if g.base != nil {
 		return ErrAlreadyParsed
@@ -335,15 +338,21 @@ func (g *Grammar) Parse(str []byte) error {
 		return ErrEmptyInput
 	}
 
-	g.ruleID = 256
+	g.ruleID = 1 << 32 // larger than the largest rune
 	g.table = make(digrams)
 	g.base = g.newRules()
 
-	g.base.last().insertAfter(g.newSymbolFromValue(uint64(str[0])))
-
-	for _, c := range str[1:] {
-		g.base.last().insertAfter(g.newSymbolFromValue(uint64(c)))
+	r, off := utf8.DecodeRune(str)
+	for off <= len(str) {
+		g.base.last().insertAfter(g.newSymbolFromValue(uint64(r)))
 		g.base.last().prev.check()
+
+		var sz int
+		r, sz = utf8.DecodeRune(str[off:])
+		if sz == 0 {
+			break // happens when the runes are all used-up
+		}
+		off += sz
 	}
 
 	return nil
