@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"unicode"
 	"unicode/utf8"
 )
 
@@ -243,30 +244,35 @@ func (pr *prettyPrinter) printNonTerminal(w io.Writer, r *rules) error {
 		pr.rules = append(pr.rules, r)
 	}
 
-	_, err := fmt.Fprint(w, i, " ")
+	_, err := fmt.Fprint(w, " ", i)
 	return err
 }
 
 func (pr *prettyPrinter) printTerminal(w io.Writer, sym uint64) error {
-	var out string
+	out := make([]byte, 1, 1+utf8.UTFMax)
+	out[0] = ' '
 
 	switch sym {
 	case ' ':
-		out = "_"
+		out = append(out, '_')
 	case '\n':
-		out = "\\n"
+		out = append(out, []byte("\\n")...)
 	case '\t':
-		out = "\\t"
+		out = append(out, []byte("\\t")...)
 	case '\\', '(', ')', '_', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
-		out = "\\" + string(sym)
+		out = append(out, '\\', byte(sym))
 	default:
-		if _, err := w.Write([]byte(string(rune(sym)))); err != nil {
-			return err
+		r := rune(sym)
+		if unicode.IsPrint(r) {
+			out = append(out, make([]byte, utf8.UTFMax)...)
+			sz := utf8.EncodeRune(out[1:], r)
+			out = out[:1+sz]
+		} else {
+			out = []byte(fmt.Sprintf(" 0x%02X", r))
 		}
-		// leave out empty
 	}
 
-	_, err := fmt.Fprint(w, out, " ")
+	_, err := w.Write(out)
 	return err
 }
 
@@ -311,7 +317,7 @@ func (g *Grammar) PrettyPrint(w io.Writer) error {
 	}
 
 	for i := 0; i < len(pr.rules); i++ {
-		if _, err := fmt.Fprint(w, i, " -> "); err != nil {
+		if _, err := fmt.Fprint(w, i, " ->"); err != nil {
 			return err
 		}
 
@@ -329,8 +335,20 @@ var ErrAlreadyParsed = errors.New("sequitor: grammar already parsed")
 // ErrEmptyInput is returned if the input string is empty
 var ErrEmptyInput = errors.New("sequitor: empty input")
 
-// Parse parses a byte string using utf-8 encoding
-func (g *Grammar) Parse(str []byte) error {
+// ErrMalformedUTF8 is returned if the input string contains malformed UTF-8
+var ErrMalformedUTF8 = errors.New("sequitor: malformed utf-8 input")
+
+// ParseUTF8 parses a byte string using utf-8 encoding
+func (g *Grammar) ParseUTF8(str []byte) error {
+	return g.parse(str, true)
+}
+
+// ParseBinary parses a binary byte string
+func (g *Grammar) ParseBinary(str []byte) error {
+	return g.parse(str, false)
+}
+
+func (g *Grammar) parse(str []byte, useUTF8 bool) error {
 	if g.base != nil {
 		return ErrAlreadyParsed
 	}
@@ -338,19 +356,32 @@ func (g *Grammar) Parse(str []byte) error {
 		return ErrEmptyInput
 	}
 
-	g.ruleID = 1 << 32 // larger than the largest rune
+	g.ruleID = uint64(utf8.MaxRune) + 1 // larger than the largest rune
 	g.table = make(digrams)
 	g.base = g.newRules()
 
-	r, off := utf8.DecodeRune(str)
-	for off <= len(str) {
-		g.base.last().insertAfter(g.newSymbolFromValue(uint64(r)))
-		g.base.last().prev.check()
-
+	off := 0
+	for {
+		var r rune
 		var sz int
-		r, sz = utf8.DecodeRune(str[off:])
-		if sz == 0 {
-			break // happens when the runes are all used-up
+		if useUTF8 {
+			r, sz = utf8.DecodeRune(str[off:])
+			if sz == 0 {
+				break
+			}
+			if r == 1 && r == utf8.RuneError {
+				return ErrMalformedUTF8
+			}
+		} else {
+			if off == len(str) {
+				break
+			}
+			r = rune(str[off])
+			sz = 1
+		}
+		g.base.last().insertAfter(g.newSymbolFromValue(uint64(r)))
+		if off > 0 {
+			g.base.last().prev.check()
 		}
 		off += sz
 	}
