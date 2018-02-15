@@ -323,10 +323,16 @@ func (g *Grammar) PrettyPrint(w io.Writer) error {
 // ErrAlreadyParsed is returned if the grammar instance has already parsed a grammar
 var ErrAlreadyParsed = errors.New("sequitor: grammar already parsed")
 
+// ErrEmptyInput is returned if the input string is empty
+var ErrEmptyInput = errors.New("sequitor: empty input")
+
 // Parse parses a byte string
 func (g *Grammar) Parse(str []byte) error {
 	if g.base != nil {
 		return ErrAlreadyParsed
+	}
+	if len(str) == 0 {
+		return ErrEmptyInput
 	}
 
 	g.ruleID = 256
