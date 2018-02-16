@@ -8,16 +8,15 @@ import (
 )
 
 func TestNoInput(t *testing.T) {
-	g := new(Grammar)
-	err := g.ParseBinary([]byte{})
+	_, err := ParseBinary([]byte{})
 	if err != ErrEmptyInput {
 		t.Error("ErrEmptyInput not returned for empty input")
 	}
 }
 
 func TestUTF8(t *testing.T) { // issue #3
-	var g Grammar
-	if err := g.ParseUTF8([]byte(`°`)); err != nil {
+	g, err := ParseUTF8([]byte(`°`))
+	if err != nil {
 		t.Fatal(err)
 	}
 	var buf bytes.Buffer
@@ -28,8 +27,8 @@ func TestUTF8(t *testing.T) { // issue #3
 }
 
 func TestPrintUTF8(t *testing.T) {
-	var g Grammar
-	if err := g.ParseUTF8([]byte(testString)); err != nil {
+	g, err := ParseUTF8([]byte(testString))
+	if err != nil {
 		t.Fatal(err)
 	}
 	var buf bytes.Buffer
@@ -41,8 +40,8 @@ func TestPrintUTF8(t *testing.T) {
 }
 
 func TestPrintBinary(t *testing.T) {
-	var g Grammar
-	if err := g.ParseBinary(testBinary); err != nil {
+	g, err := ParseBinary(testBinary)
+	if err != nil {
 		t.Fatal(err)
 	}
 	var buf bytes.Buffer

@@ -31,9 +31,7 @@ nine days old.
 
 func ExamplePrettyPrintUTF8() {
 
-	g := new(Grammar)
-
-	err := g.ParseUTF8([]byte(testString))
+	g, err := ParseUTF8([]byte(testString))
 	if err != nil {
 		panic(err)
 	}

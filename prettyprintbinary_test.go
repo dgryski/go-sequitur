@@ -9,9 +9,7 @@ var testBinary = []byte{0xfe, 0xff, 0xfd, 0xfe, 0xff, 1, 2, 3, 4, 5, 'a', 'b', 1
 
 func ExamplePrettyPrintBinary() {
 
-	g := new(Grammar)
-
-	err := g.ParseBinary(testBinary)
+	g, err := ParseBinary(testBinary)
 	if err != nil {
 		panic(err)
 	}

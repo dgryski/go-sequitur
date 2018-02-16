@@ -287,7 +287,12 @@ func rawPrint(w io.Writer, r *rules) error {
 			}
 		} else {
 			rb := make([]byte, utf8.UTFMax)
-			sz := utf8.EncodeRune(rb, rune(p.value))
+			sz := 1
+			if p.value <= 0xff {
+				rb[0] = byte(p.value)
+			} else {
+				sz = utf8.EncodeRune(rb, rune(p.value))
+			}
 			if _, err := w.Write(rb[:sz]); err != nil {
 				return err
 			}
@@ -339,13 +344,15 @@ var ErrEmptyInput = errors.New("sequitor: empty input")
 var ErrMalformedUTF8 = errors.New("sequitor: malformed utf-8 input")
 
 // ParseUTF8 parses a byte string using utf-8 encoding
-func (g *Grammar) ParseUTF8(str []byte) error {
-	return g.parse(str, true)
+func ParseUTF8(str []byte) (*Grammar, error) {
+	g := new(Grammar)
+	return g, g.parse(str, true)
 }
 
 // ParseBinary parses a binary byte string
-func (g *Grammar) ParseBinary(str []byte) error {
-	return g.parse(str, false)
+func ParseBinary(str []byte) (*Grammar, error) {
+	g := new(Grammar)
+	return g, g.parse(str, false)
 }
 
 func (g *Grammar) parse(str []byte, useUTF8 bool) error {
