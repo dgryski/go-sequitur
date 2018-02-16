@@ -263,7 +263,7 @@ func (pr *prettyPrinter) printTerminal(w io.Writer, sym uint64) error {
 		out = append(out, '\\', byte(sym))
 	default:
 		r := rune(sym)
-		if unicode.IsPrint(r) {
+		if unicode.IsPrint(r) && (r < utf8.RuneSelf || r > 0xff) {
 			out = append(out, make([]byte, utf8.UTFMax)...)
 			sz := utf8.EncodeRune(out[1:], r)
 			out = out[:1+sz]

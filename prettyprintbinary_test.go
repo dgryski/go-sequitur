@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-var testBinary = []byte{1, 2, 3, 4, 5, 'a', 'b', 5, 4, 3, 2, 1, 1, 'a', 'b', 2, 3, 4, 5, 2, 3}
+var testBinary = []byte{0xfe, 0xff, 0xfd, 0xfe, 0xff, 1, 2, 3, 4, 5, 'a', 'b', 1, 2, 3, 4, 5, 'a', 'b'}
 
 func ExamplePrettyPrintBinary() {
 
@@ -25,8 +25,7 @@ func ExamplePrettyPrintBinary() {
 	fmt.Println(string(output.Bytes()))
 
 	// Output:
-	// 0 -> 0x01 1 2 0x05 0x04 0x03 0x02 0x01 0x01 2 1 3
-	// 1 -> 3 0x04 0x05
-	// 2 -> a b
-	// 3 -> 0x02 0x03
+	// 0 -> 1 0xFD 1 2 2
+	// 1 -> 0xFE 0xFF
+	// 2 -> 0x01 0x02 0x03 0x04 0x05 a b
 }
