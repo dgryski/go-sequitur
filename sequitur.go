@@ -251,8 +251,8 @@ func (pr *prettyPrinter) printNonTerminal(w io.Writer, r *rules) error {
 func (pr *prettyPrinter) printTerminal(w io.Writer, sym uint64) error {
 	out := make([]byte, 1, 1+utf8.UTFMax)
 	out[0] = ' '
-
-	switch sym {
+	rb := runeOrByte(sym)
+	switch r := rb.rune(); r {
 	case ' ':
 		out = append(out, '_')
 	case '\n':
@@ -260,18 +260,10 @@ func (pr *prettyPrinter) printTerminal(w io.Writer, sym uint64) error {
 	case '\t':
 		out = append(out, []byte("\\t")...)
 	case '\\', '(', ')', '_', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
-		out = append(out, '\\', byte(sym))
+		out = append(out, '\\', byte(r))
 	default:
-		r := rune(sym)
-		if unicode.IsPrint(r) && (r < utf8.RuneSelf || r > 0xff) {
-			out = append(out, make([]byte, utf8.UTFMax)...)
-			sz := utf8.EncodeRune(out[1:], r)
-			out = out[:1+sz]
-		} else {
-			out = []byte(fmt.Sprintf(" 0x%02X", r))
-		}
+		out = rb.appendEscaped(out)
 	}
-
 	_, err := w.Write(out)
 	return err
 }
@@ -286,14 +278,7 @@ func rawPrint(w io.Writer, r *rules) error {
 				return err
 			}
 		} else {
-			rb := make([]byte, utf8.UTFMax)
-			sz := 1
-			if p.value <= 0xff {
-				rb[0] = byte(p.value)
-			} else {
-				sz = utf8.EncodeRune(rb, rune(p.value))
-			}
-			if _, err := w.Write(rb[:sz]); err != nil {
+			if _, err := w.Write(runeOrByte(p.value).appendBytes(nil)); err != nil {
 				return err
 			}
 		}
@@ -340,58 +325,88 @@ var ErrAlreadyParsed = errors.New("sequitor: grammar already parsed")
 // ErrEmptyInput is returned if the input string is empty
 var ErrEmptyInput = errors.New("sequitor: empty input")
 
-// ErrMalformedUTF8 is returned if the input string contains malformed UTF-8
-var ErrMalformedUTF8 = errors.New("sequitor: malformed utf-8 input")
-
-// ParseUTF8 parses a byte string using utf-8 encoding
-func ParseUTF8(str []byte) (*Grammar, error) {
-	g := new(Grammar)
-	return g, g.parse(str, true)
-}
-
-// ParseBinary parses a binary byte string
-func ParseBinary(str []byte) (*Grammar, error) {
-	g := new(Grammar)
-	return g, g.parse(str, false)
-}
-
-func (g *Grammar) parse(str []byte, useUTF8 bool) error {
-	if g.base != nil {
-		return ErrAlreadyParsed
-	}
+// Parse parses the given bytes.
+func Parse(str []byte) (*Grammar, error) {
 	if len(str) == 0 {
-		return ErrEmptyInput
+		return nil, ErrEmptyInput
 	}
-
-	g.ruleID = uint64(utf8.MaxRune) + 1 // larger than the largest rune
-	g.table = make(digrams)
+	g := &Grammar{
+		ruleID: uint64(utf8.MaxRune) + 1, // larger than the largest rune
+		table:  make(digrams),
+	}
 	g.base = g.newRules()
-
-	off := 0
-	for {
-		var r rune
-		var sz int
-		if useUTF8 {
-			r, sz = utf8.DecodeRune(str[off:])
-			if sz == 0 {
-				break
-			}
-			if r == 1 && r == utf8.RuneError {
-				return ErrMalformedUTF8
-			}
+	for off := 0; off < len(str); {
+		var rb runeOrByte
+		r, sz := utf8.DecodeRune(str[off:])
+		if sz == 1 && r == utf8.RuneError {
+			rb = newByte(str[off])
 		} else {
-			if off == len(str) {
-				break
-			}
-			r = rune(str[off])
-			sz = 1
+			rb = newRune(r)
 		}
-		g.base.last().insertAfter(g.newSymbolFromValue(uint64(r)))
+		g.base.last().insertAfter(g.newSymbolFromValue(uint64(rb)))
 		if off > 0 {
 			g.base.last().prev.check()
 		}
 		off += sz
 	}
+	return g, nil
+}
 
-	return nil
+// runeOrByte holds a rune or a byte so that we can distinguish between
+// bytes that don't represent valid UTF-8 and all other runes. Values
+// not representable as UTF-8 are in the range 128-255. All other
+// runes are represented as 256 onwards (subtract 256 to get the
+// actual rune value). Note that the range 0-127 is unused.
+type runeOrByte rune
+
+func newRune(r rune) runeOrByte {
+	return runeOrByte(r + 256)
+}
+
+// newByte returns a representation of the given byte b.
+func newByte(b byte) runeOrByte {
+	if b < utf8.RuneSelf {
+		return runeOrByte(b) + 256
+	}
+	return runeOrByte(b)
+}
+
+// rune returns the rune representation of
+// rb, or zero if there is none.
+func (rb runeOrByte) rune() rune {
+	if rb < 256 {
+		return 0
+	}
+	return rune(rb - 256)
+}
+
+// appendEscaped appends the possibly escaped rune or byte
+// to b. If it's printable, the printable representation is appended,
+// otherwise \x, \u or \U are used as appropriate.
+// Note, it doesn't escape \ itself.
+func (rb runeOrByte) appendEscaped(b []byte) []byte {
+	if rb < 256 {
+		return append(b, fmt.Sprintf("\\x%02x", rb)...)
+	}
+	r := rune(rb - 256)
+	switch {
+	case unicode.IsPrint(r):
+		return append(b, string(r)...)
+	case r < utf8.RuneSelf:
+		// Could use either representation, but \x is shorter.
+		return append(b, fmt.Sprintf("\\x%02x", r)...)
+	case r <= 0xffff:
+		return append(b, fmt.Sprintf("\\u%04x", r)...)
+	default:
+		return append(b, fmt.Sprintf("\\U%08x", r)...)
+	}
+}
+
+// appendBytes appends the byte (as a byte) or the rune (as utf-8)
+// to b.
+func (r runeOrByte) appendBytes(b []byte) []byte {
+	if r < 256 {
+		return append(b, byte(r))
+	}
+	return append(b, string(r-256)...)
 }
