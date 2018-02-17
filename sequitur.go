@@ -320,10 +320,10 @@ func (g *Grammar) PrettyPrint(w io.Writer) error {
 }
 
 // ErrAlreadyParsed is returned if the grammar instance has already parsed a grammar
-var ErrAlreadyParsed = errors.New("sequitor: grammar already parsed")
+var ErrAlreadyParsed = errors.New("sequitur: grammar already parsed")
 
 // ErrEmptyInput is returned if the input string is empty
-var ErrEmptyInput = errors.New("sequitor: empty input")
+var ErrEmptyInput = errors.New("sequitur: empty input")
 
 // Parse parses the given bytes.
 func Parse(str []byte) (*Grammar, error) {
