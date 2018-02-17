@@ -11,7 +11,7 @@ func ExampleImportance() {
 		panic(err)
 	}
 
-	for k, v := range g.Compact().Importance(5, true) {
+	for k, v := range g.Compact().Index(5, true).Importance() {
 
 		if k >= 10 {
 			break

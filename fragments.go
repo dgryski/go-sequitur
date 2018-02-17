@@ -182,6 +182,37 @@ func (comp *Compact) Bytes() []byte {
 	return comp.Map[comp.RootID].IDs.Bytes(comp)
 }
 
+// CompactIndexes indexes the Compact datastructure.
+type CompactIndexed struct {
+	CompactBasis  *Compact
+	MinSymByteLen int
+	TrimSpace     bool
+	StringToID    map[string]SymbolID
+	IDToBytes     map[SymbolID][]byte
+}
+
+// Index the Compact grammar to enable further analysis, optionally ignoring the short ones & trimming spaces.
+func (comp *Compact) Index(minimumSymbolByteLength int, trimSpace bool) *CompactIndexed {
+	ret := &CompactIndexed{
+		CompactBasis:  comp,
+		MinSymByteLen: minimumSymbolByteLength,
+		TrimSpace:     trimSpace,
+		StringToID:    make(map[string]SymbolID),
+		IDToBytes:     make(map[SymbolID][]byte),
+	}
+	for k, v := range comp.Map {
+		b := v.IDs.Bytes(comp)
+		if trimSpace {
+			b = bytes.TrimSpace(b)
+		}
+		if len(b) >= minimumSymbolByteLength {
+			ret.StringToID[string(b)] = k
+			ret.IDToBytes[k] = b
+		}
+	}
+	return ret
+}
+
 type Importance struct {
 	ID    SymbolID
 	Score int
@@ -189,22 +220,17 @@ type Importance struct {
 	Bytes []byte
 }
 
-// Importance ranks the most important IDs, optionally ignoring the short ones & trimming spaces.
-func (comp *Compact) Importance(minimumSymbolByteLength int, trimSpace bool) []Importance {
-	imp := make([]Importance, 0, len(comp.Map))
-	for k, v := range comp.Map {
-		b := v.IDs.Bytes(comp)
-		if trimSpace {
-			b = bytes.TrimSpace(b)
-		}
-		if len(b) >= minimumSymbolByteLength {
-			imp = append(imp, Importance{
-				ID:    k,
-				Score: v.Used * v.Used * len(b), // TODO(elliott5) review this ranking algorithm
-				Used:  v.Used,
-				Bytes: b,
-			})
-		}
+// Importance ranks the most important IDs.
+func (ci *CompactIndexed) Importance() []Importance {
+	imp := make([]Importance, 0, len(ci.CompactBasis.Map))
+	for k, v := range ci.IDToBytes {
+		u := ci.CompactBasis.Map[k].Used
+		imp = append(imp, Importance{
+			ID:    k,
+			Score: u * u * len(v), // TODO(elliott5) review this ranking algorithm
+			Used:  u,
+			Bytes: v,
+		})
 	}
 	sort.Slice(imp, func(i, j int) bool {
 		if imp[i].Score == imp[j].Score {
