@@ -70,7 +70,7 @@ func TestRuneOrByteAppendBytesWithRune(t *testing.T) {
 	buf := make([]byte, 10)
 	for i := 0; i <= utf8.MaxRune; i++ {
 		rb := newRune(rune(i))
-		buf := append(buf[:0], "ab"...)
+		buf = append(buf[:0], "ab"...)
 		buf = rb.appendBytes(buf)
 		if want := "ab" + string(i); string(buf) != want {
 			t.Errorf("unexpected bytes appended; got %q want %q", buf, want)
