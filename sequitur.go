@@ -404,9 +404,9 @@ func (rb runeOrByte) appendEscaped(b []byte) []byte {
 
 // appendBytes appends the byte (as a byte) or the rune (as utf-8)
 // to b.
-func (r runeOrByte) appendBytes(b []byte) []byte {
-	if r < 256 {
-		return append(b, byte(r))
+func (rb runeOrByte) appendBytes(b []byte) []byte {
+	if rb < 256 {
+		return append(b, byte(rb))
 	}
-	return append(b, string(r-256)...)
+	return append(b, string(rb-256)...)
 }
