@@ -27,7 +27,7 @@ func TestUTF8(t *testing.T) { // issue #3
 	var buf bytes.Buffer
 	g.PrettyPrint(&buf)
 	if !utf8.Valid(buf.Bytes()) {
-		t.Error("invalid utf8: " + string(buf.Bytes()))
+		t.Error("invalid utf8: " + buf.String())
 	}
 }
 
@@ -38,9 +38,9 @@ func TestPrintUTF8(t *testing.T) {
 	}
 	var buf bytes.Buffer
 	g.Print(&buf)
-	if string(buf.Bytes()) != testString {
+	if buf.String() != testString {
 		t.Error("UTF8 Print() incorrect\nWanted:\n"+testString,
-			"Got:\n", string(buf.Bytes()))
+			"Got:\n", buf.String())
 	}
 }
 
