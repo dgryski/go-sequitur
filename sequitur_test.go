@@ -2,9 +2,13 @@ package sequitur
 
 import (
 	"bytes"
+	"io/ioutil"
+	"path/filepath"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
+	"testing/quick"
 	"unicode/utf8"
 )
 
@@ -112,6 +116,70 @@ func TestRuneOrByteAppendEscapedWithRune(t *testing.T) {
 		}
 		if want := string(i); got != want {
 			t.Fatalf("unexpected result, got %q want %q ", got, want)
+		}
+	}
+}
+
+func TestQuick(t *testing.T) {
+
+	f := func(contents []byte) bool {
+		if len(contents) == 0 {
+			return true
+		}
+
+		var b bytes.Buffer
+
+		g, _ := Parse(contents)
+		g.Print(&b)
+
+		return bytes.Equal(b.Bytes(), contents)
+	}
+
+	if err := quick.Check(f, nil); err != nil {
+		t.Errorf("error during quickcheck: %v", err)
+	}
+}
+
+func TestGolden(t *testing.T) {
+
+	corpusFiles, err := filepath.Glob("testdata/*.input")
+
+	if err != nil {
+		t.Errorf("error opening test_dir: %v", err)
+		return
+	}
+
+	for _, corpusFile := range corpusFiles {
+		contents, err := ioutil.ReadFile(corpusFile)
+		if err != nil {
+			t.Errorf("failed to read %s: %v", corpusFile, err)
+			continue
+		}
+
+		var b bytes.Buffer
+
+		g, _ := Parse(contents)
+		g.PrettyPrint(&b)
+
+		outputFile := strings.TrimSuffix(corpusFile, ".input") + ".output"
+		golden, err := ioutil.ReadFile(outputFile)
+		if err != nil {
+			t.Errorf("failed to read %s: %v", outputFile, err)
+			continue
+		}
+
+		if !bytes.Equal(b.Bytes(), golden) {
+			t.Errorf("mismatch for %s", corpusFile)
+		} else {
+			t.Logf("processed %s successfully", corpusFile)
+		}
+
+		b.Reset()
+		g.Print(&b)
+		if !bytes.Equal(b.Bytes(), contents) {
+			t.Errorf("mismatch during evaluation for %s", corpusFile)
+		} else {
+			t.Logf("evaluated %s successfully", corpusFile)
 		}
 	}
 }
