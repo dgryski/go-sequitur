@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"io/ioutil"
 	"path/filepath"
-	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -51,7 +50,7 @@ func TestPrintBinary(t *testing.T) {
 	}
 	var buf bytes.Buffer
 	g.Print(&buf)
-	if !reflect.DeepEqual(buf.Bytes(), testBinary) {
+	if !bytes.Equal(buf.Bytes(), testBinary) {
 		t.Error("Binary Print incorrect\nwanted:", testBinary, "\ngot:", buf.Bytes())
 	}
 }
