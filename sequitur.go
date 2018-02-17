@@ -331,7 +331,7 @@ func Parse(str []byte) (*Grammar, error) {
 		return nil, ErrEmptyInput
 	}
 	g := &Grammar{
-		ruleID: uint64(utf8.MaxRune) + 1, // larger than the largest rune
+		ruleID: maxRuneOrByte + 1,
 		table:  make(digrams),
 	}
 	g.base = g.newRules()
@@ -358,6 +358,8 @@ func Parse(str []byte) (*Grammar, error) {
 // runes are represented as 256 onwards (subtract 256 to get the
 // actual rune value). Note that the range 0-127 is unused.
 type runeOrByte rune
+
+const maxRuneOrByte = uint64(utf8.MaxRune) + 256 // larger than the largest possible value of runeOrByte
 
 func newRune(r rune) runeOrByte {
 	return runeOrByte(r + 256)
