@@ -319,9 +319,6 @@ func (g *Grammar) PrettyPrint(w io.Writer) error {
 	return nil
 }
 
-// ErrAlreadyParsed is returned if the grammar instance has already parsed a grammar
-var ErrAlreadyParsed = errors.New("sequitur: grammar already parsed")
-
 // ErrEmptyInput is returned if the input string is empty
 var ErrEmptyInput = errors.New("sequitur: empty input")
 
