@@ -184,11 +184,18 @@ func (comp *Compact) Bytes() []byte {
 
 // CompactIndexes indexes the Compact datastructure.
 type CompactIndexed struct {
-	CompactBasis  *Compact
-	MinSymByteLen int
-	TrimSpace     bool
-	StringToID    map[string]SymbolID
-	IDToBytes     map[SymbolID][]byte
+	CompactBasis        *Compact
+	MinSymByteLen       int
+	TrimSpace           bool
+	OriginalInputLength int
+	StringToID          map[string]SymbolID
+	IDtoInfo            map[SymbolID]CompactIndexedInfo
+}
+
+// CompactIndexedInfo stores derrived information about a Symbol.
+type CompactIndexedInfo struct {
+	Bytes    []byte
+	Coverage float64 // the proportion of the original input represented by this symbol
 }
 
 // Index the Compact grammar to enable further analysis, optionally ignoring the short ones & trimming spaces.
@@ -198,24 +205,35 @@ func (comp *Compact) Index(minimumSymbolByteLength int, trimSpace bool) *Compact
 		MinSymByteLen: minimumSymbolByteLength,
 		TrimSpace:     trimSpace,
 		StringToID:    make(map[string]SymbolID),
-		IDToBytes:     make(map[SymbolID][]byte),
+		IDtoInfo:      make(map[SymbolID]CompactIndexedInfo),
 	}
 	for k, v := range comp.Map {
-		b := v.IDs.Bytes(comp)
+		bOrig := v.IDs.Bytes(comp)
+		b := bOrig
 		if trimSpace {
 			b = bytes.TrimSpace(b)
 		}
 		if len(b) >= minimumSymbolByteLength {
 			ret.StringToID[string(b)] = k
-			ret.IDToBytes[k] = b
+			ret.IDtoInfo[k] = CompactIndexedInfo{
+				Bytes:    b,
+				Coverage: float64(len(bOrig)),
+			}
 		}
+		if k == comp.RootID {
+			ret.OriginalInputLength = len(bOrig)
+		}
+	}
+	for k, v := range ret.IDtoInfo {
+		v.Coverage /= float64(ret.OriginalInputLength)
+		ret.IDtoInfo[k] = v
 	}
 	return ret
 }
 
 type Importance struct {
 	ID    SymbolID
-	Score int
+	Score float64
 	Used  int
 	Bytes []byte
 }
@@ -223,13 +241,13 @@ type Importance struct {
 // Importance ranks the most important IDs.
 func (ci *CompactIndexed) Importance() []Importance {
 	imp := make([]Importance, 0, len(ci.CompactBasis.Map))
-	for k, v := range ci.IDToBytes {
+	for k, v := range ci.IDtoInfo {
 		u := ci.CompactBasis.Map[k].Used
 		imp = append(imp, Importance{
 			ID:    k,
-			Score: u * u * len(v), // TODO(elliott5) review this ranking algorithm
+			Score: float64(u*u) * v.Coverage, // TODO(elliott5) review this ranking algorithm
 			Used:  u,
-			Bytes: v,
+			Bytes: v.Bytes,
 		})
 	}
 	sort.Slice(imp, func(i, j int) bool {

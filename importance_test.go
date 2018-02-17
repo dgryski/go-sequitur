@@ -17,21 +17,21 @@ func ExampleImportance() {
 			break
 		}
 
-		fmt.Println(k, v.Score, v.Used, string(v.Bytes))
+		fmt.Printf("%d %7.5f %d %s\n", k, v.Score, v.Used, string(v.Bytes))
 
 	}
 
 	// Output:
-	// 0 225 5 algorithm
-	// 1 176 2 Nevill-Manning, C.G.; Witten, I.H. (1997). "
-	// 2 175 5 grammar
-	// 3 162 3 nonterminal symbol
-	// 4 128 4 sequence
-	// 5 126 3 in the grammar
-	// 6 96 4 in the
-	// 7 96 4 digram
-	// 8 96 4 symbol
-	// 9 96 4 equenc
+	// 0 0.05730 5 algorithm
+	// 1 0.04584 2 Nevill-Manning, C.G.; Witten, I.H. (1997). "
+	// 2 0.04456 5 grammar
+	// 3 0.04125 3 nonterminal symbol
+	// 4 0.03667 4 sequence
+	// 5 0.03209 3 in the grammar
+	// 6 0.02852 4 in the
+	// 7 0.02852 4 digram
+	// 8 0.02445 4 symbol
+	// 9 0.02445 4 equenc
 }
 
 const testImportance = `
