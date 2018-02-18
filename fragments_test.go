@@ -22,7 +22,7 @@ func TestFragments(t *testing.T) {
 		}
 
 		comp := g.Compact()
-		if !reflect.DeepEqual(comp.Bytes(), test) {
+		if !reflect.DeepEqual(comp.Bytes(comp.RootID), test) {
 			t.Error(tNum, "comp.Bytes() not equal")
 		}
 

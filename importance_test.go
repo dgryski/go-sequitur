@@ -1,37 +1,51 @@
 package sequitur
 
 import (
+	"bytes"
 	"fmt"
+	"strings"
 )
 
 func ExampleImportance() {
 
-	g, err := Parse([]byte(testImportance))
+	grammar, err := Parse([]byte(testImportance))
 	if err != nil {
 		panic(err)
 	}
 
-	for k, v := range g.Compact().Index(5, true).Importance() {
+	cGrammar := grammar.Compact()
+	filterdIdx := cGrammar.Index(func(in []byte) []byte {
+		in = bytes.TrimSpace(in)
+		if len(in) >= 5 && len(in) <= 25 {
+			return in
+		}
+		return nil
+	})
+
+	for k, v := range filterdIdx.Importance(func(sid SymbolID) float64 {
+		u := cGrammar.Map[sid].Used
+		return filterdIdx.IDinfo[sid].Coverage * float64(u*u)
+	}) {
 
 		if k >= 10 {
 			break
 		}
 
-		fmt.Printf("%d %7.5f %d %s\n", k, v.Score, v.Used, string(v.Bytes))
+		fmt.Printf("%d %7.5f %s\n", k, v.Score, strings.TrimSpace(string(cGrammar.Bytes(v.ID))))
 
 	}
 
 	// Output:
-	// 0 0.05730 5 algorithm
-	// 1 0.04584 2 Nevill-Manning, C.G.; Witten, I.H. (1997). "
-	// 2 0.04456 5 grammar
-	// 3 0.04125 3 nonterminal symbol
-	// 4 0.03667 4 sequence
-	// 5 0.03209 3 in the grammar
-	// 6 0.02852 4 in the
-	// 7 0.02852 4 digram
-	// 8 0.02445 4 symbol
-	// 9 0.02445 4 equenc
+	// 0 0.05730 algorithm
+	// 1 0.04456 grammar
+	// 2 0.04125 nonterminal symbol
+	// 3 0.03667 sequence
+	// 4 0.03209 in the grammar
+	// 5 0.02852 in the
+	// 6 0.02852 digram
+	// 7 0.02445 symbol
+	// 8 0.02445 equenc
+	// 9 0.02292 definition
 }
 
 const testImportance = `

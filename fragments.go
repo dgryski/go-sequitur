@@ -177,9 +177,12 @@ func (comp *Compact) PrettyPrint(w io.Writer) error {
 	return nil
 }
 
-// Bytes of a Compact grammar, including all of the symbols that it contains.
-func (comp *Compact) Bytes() []byte {
-	return comp.Map[comp.RootID].IDs.Bytes(comp)
+// Bytes of a Compact grammar SymbolID, including all of the symbols that it contains.
+func (comp *Compact) Bytes(sid SymbolID) []byte {
+	if uint64(sid) <= maxRuneOrByte {
+		return runeOrByte(sid).appendBytes(make([]byte, 0, utf8.UTFMax))
+	}
+	return comp.Map[sid].IDs.Bytes(comp)
 }
 
 // CompactIndexes indexes the Compact datastructure.
@@ -189,44 +192,40 @@ type CompactIndexed struct {
 	TrimSpace           bool
 	OriginalInputLength int
 	StringToID          map[string]SymbolID
-	IDtoInfo            map[SymbolID]CompactIndexedInfo
+	IDinfo              map[SymbolID]CompactIndexedInfo
 }
 
 // CompactIndexedInfo stores derrived information about a Symbol.
 type CompactIndexedInfo struct {
-	Bytes    []byte
 	Coverage float64 // the proportion of the original input represented by this symbol
 }
 
-// Index the Compact grammar to enable further analysis, optionally ignoring the short ones & trimming spaces.
-func (comp *Compact) Index(minimumSymbolByteLength int, trimSpace bool) *CompactIndexed {
+// Index the Compact grammar to enable further analysis, optionally filtering the []byte representations of the symbols.
+func (comp *Compact) Index(filter func([]byte) []byte) *CompactIndexed {
 	ret := &CompactIndexed{
-		CompactBasis:  comp,
-		MinSymByteLen: minimumSymbolByteLength,
-		TrimSpace:     trimSpace,
-		StringToID:    make(map[string]SymbolID),
-		IDtoInfo:      make(map[SymbolID]CompactIndexedInfo),
+		CompactBasis: comp,
+		StringToID:   make(map[string]SymbolID),
+		IDinfo:       make(map[SymbolID]CompactIndexedInfo),
 	}
 	for k, v := range comp.Map {
 		bOrig := v.IDs.Bytes(comp)
-		b := bOrig
-		if trimSpace {
-			b = bytes.TrimSpace(b)
-		}
-		if len(b) >= minimumSymbolByteLength {
-			ret.StringToID[string(b)] = k
-			ret.IDtoInfo[k] = CompactIndexedInfo{
-				Bytes:    b,
-				Coverage: float64(len(bOrig)),
-			}
-		}
 		if k == comp.RootID {
 			ret.OriginalInputLength = len(bOrig)
 		}
+		b := bOrig
+		if filter != nil {
+			b = filter(b)
+		}
+		if len(b) > 0 {
+			ret.StringToID[string(b)] = k
+			ret.IDinfo[k] = CompactIndexedInfo{
+				Coverage: float64(len(bOrig)),
+			}
+		}
 	}
-	for k, v := range ret.IDtoInfo {
+	for k, v := range ret.IDinfo {
 		v.Coverage /= float64(ret.OriginalInputLength)
-		ret.IDtoInfo[k] = v
+		ret.IDinfo[k] = v
 	}
 	return ret
 }
@@ -234,20 +233,19 @@ func (comp *Compact) Index(minimumSymbolByteLength int, trimSpace bool) *Compact
 type Importance struct {
 	ID    SymbolID
 	Score float64
-	Used  int
-	Bytes []byte
 }
 
-// Importance ranks the most important IDs.
-func (ci *CompactIndexed) Importance() []Importance {
+// Importance ranks the most important IDs according to the given scoring function, or the coverage if the function is nil.
+func (ci *CompactIndexed) Importance(scoreFn func(SymbolID) float64) []Importance {
 	imp := make([]Importance, 0, len(ci.CompactBasis.Map))
-	for k, v := range ci.IDtoInfo {
-		u := ci.CompactBasis.Map[k].Used
+	for k, v := range ci.IDinfo {
+		score := v.Coverage
+		if scoreFn != nil {
+			score = scoreFn(k)
+		}
 		imp = append(imp, Importance{
 			ID:    k,
-			Score: float64(u*u) * v.Coverage, // TODO(elliott5) review this ranking algorithm
-			Used:  u,
-			Bytes: v.Bytes,
+			Score: score,
 		})
 	}
 	sort.Slice(imp, func(i, j int) bool {
