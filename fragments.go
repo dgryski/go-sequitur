@@ -9,6 +9,7 @@ import (
 )
 
 // Symbol is the named type for a grammar symbol.
+// A nil value for *Symbol means it is representing an empty grammar.
 type Symbol symbols
 
 // String for Symbol.
@@ -20,8 +21,15 @@ func (s *Symbol) String() string {
 // There are 2,146,369,280 possible +ve values of rune above maxRuneOrByte which are used for rule IDs (composite symbols).
 type SymbolID rune
 
+const EmptySymbolID = -1 // Shows that a SymbolID represents an empty grammar.
+
+const EmptySymbolIDstring = "\\empty" // The visual representation of an empty grammar.
+
 // String for SymbolID.
 func (sid SymbolID) String() string {
+	if sid == EmptySymbolID {
+		return EmptySymbolIDstring
+	}
 	if sid.IsRule() {
 		return fmt.Sprint(uint32(sid))
 	}
@@ -35,6 +43,9 @@ func (sid SymbolID) IsRule() bool {
 
 // ID of a Symbol.
 func (s *Symbol) ID() SymbolID {
+	if s == nil {
+		return EmptySymbolID
+	}
 	if s.rule != nil {
 		return SymbolID(s.rule.id)
 	}
@@ -43,6 +54,9 @@ func (s *Symbol) ID() SymbolID {
 
 // Bytes of a Symbol and all its sub-symbols.
 func (s *Symbol) Bytes() []byte {
+	if s == nil {
+		return nil
+	}
 	if s.rule != nil {
 		var b bytes.Buffer
 		_ = rawPrint(&b, s.rule) // ignore error
@@ -53,6 +67,9 @@ func (s *Symbol) Bytes() []byte {
 
 // Used gives the number of times this symbol has been reused.
 func (s *Symbol) Used() int {
+	if s == nil {
+		return 0
+	}
 	if s.rule != nil {
 		return s.rule.count
 	}
@@ -62,6 +79,9 @@ func (s *Symbol) Used() int {
 // SubSymbols returns a slice of the symbols comprising this one.
 // It returns an empty slice if the symbol is not a rule.
 func (s *Symbol) SubSymbols() []*Symbol {
+	if s == nil {
+		return nil
+	}
 	ret := []*Symbol{}
 	if s.rule != nil {
 		for p := s.rule.first(); !p.isGuard(); p = p.next {
@@ -73,6 +93,9 @@ func (s *Symbol) SubSymbols() []*Symbol {
 
 // Symbol provides the top-level symbol for a Grammar.
 func (g *Grammar) Symbol() *Symbol {
+	if g.base == nil {
+		return nil // a nil *Symbol represents an empty grammar.
+	}
 	return (*Symbol)(&symbols{
 		g:    g,
 		rule: g.base,
@@ -98,15 +121,21 @@ type SymbolIDslice []SymbolID
 // Compact returns the Compact representation of a Grammar.
 func (g *Grammar) Compact() *Compact {
 	gs := g.Symbol()
+	id := gs.ID()
 	fm := &Compact{
-		RootID: gs.ID(),
+		RootID: id,
 		Map:    make(map[SymbolID]CompactEntry),
 	}
-	fm.addSymbol(gs)
+	if id != EmptySymbolID {
+		fm.addSymbol(gs)
+	}
 	return fm
 }
 
 func (comp *Compact) addSymbol(s *Symbol) {
+	if comp == nil {
+		return
+	}
 	id := s.ID()
 	if id.IsRule() {
 		_, exists := comp.Map[id]
@@ -127,6 +156,9 @@ func (comp *Compact) addSymbol(s *Symbol) {
 
 // Bytes of a SymbolID, including all of the symbols that it contains.
 func (sid SymbolID) Bytes(comp *Compact) []byte {
+	if sid == EmptySymbolID || comp == nil {
+		return nil
+	}
 	if sid.IsRule() {
 		entry := comp.Map[sid]
 		result := make([]byte, 0, len(entry.IDs)*utf8.UTFMax)
@@ -140,6 +172,9 @@ func (sid SymbolID) Bytes(comp *Compact) []byte {
 
 // Bytes of a SymbolIDslice, including all of the symbols that it contains.
 func (sids SymbolIDslice) Bytes(comp *Compact) []byte {
+	if len(sids) == 0 || comp == nil {
+		return nil
+	}
 	result := make([]byte, 0, len(sids)*utf8.UTFMax)
 	for _, id := range sids {
 		result = append(result, id.Bytes(comp)...)
@@ -162,6 +197,12 @@ func (comp *Compact) prettyPrint(id SymbolID, seenMap map[SymbolID]string) {
 
 // PrettyPrint a Compact grammar, using actual IDs.
 func (comp *Compact) PrettyPrint(w io.Writer) error {
+	if comp == nil {
+		return nil
+	}
+	if comp.RootID == EmptySymbolID {
+		return nil
+	}
 	output := make(map[SymbolID]string)
 	comp.prettyPrint(comp.RootID, output)
 	idList := make(SymbolIDslice, 0, len(output))
@@ -179,6 +220,9 @@ func (comp *Compact) PrettyPrint(w io.Writer) error {
 
 // Bytes of a Compact grammar SymbolID, including all of the symbols that it contains.
 func (comp *Compact) Bytes(sid SymbolID) []byte {
+	if sid == EmptySymbolID || comp == nil {
+		return nil
+	}
 	if uint64(sid) <= maxRuneOrByte {
 		return runeOrByte(sid).appendBytes(make([]byte, 0, utf8.UTFMax))
 	}
@@ -203,6 +247,9 @@ type CompactIndexedInfo struct {
 
 // Index the Compact grammar to enable further analysis, optionally filtering the []byte representations of the symbols.
 func (comp *Compact) Index(filterKeep func([]byte) bool) *CompactIndexed {
+	if comp == nil {
+		return nil
+	}
 	ret := &CompactIndexed{
 		CompactBasis: comp,
 		StringToID:   make(map[string]SymbolID),
@@ -238,6 +285,9 @@ type Importance struct {
 
 // Importance ranks the most important IDs according to the given scoring function, or the coverage if the function is nil.
 func (ci *CompactIndexed) Importance(scoreFn func(SymbolID) float64) []Importance {
+	if ci == nil {
+		return nil
+	}
 	imp := make([]Importance, 0, len(ci.CompactBasis.Map))
 	for k, v := range ci.IDinfo {
 		score := v.Coverage
@@ -260,6 +310,9 @@ func (ci *CompactIndexed) Importance(scoreFn func(SymbolID) float64) []Importanc
 
 // Similarity between two CompactIndexed grammars. Result: 1 (or nearby) equality, 0 inequality.
 func (ci *CompactIndexed) Similarity(ci2 *CompactIndexed) float64 {
+	if ci == nil || ci2 == nil {
+		return 0
+	}
 	cumCoverage := 0.0
 	if len(ci2.StringToID) < len(ci.StringToID) {
 		ci2, ci = ci, ci2 // swap to iterate over ci2 if it is shorter

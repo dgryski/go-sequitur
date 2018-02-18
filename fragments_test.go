@@ -1,6 +1,7 @@
 package sequitur
 
 import (
+	"bytes"
 	"reflect"
 	"testing"
 )
@@ -27,4 +28,33 @@ func TestFragments(t *testing.T) {
 		}
 
 	}
+}
+
+func TestEmpty(t *testing.T) {
+	g := Grammar{}
+	if len(g.Symbol().Bytes()) > 0 {
+		t.Error("Empty Grammar returns non-empty Bytes():", g.Symbol().Bytes())
+	}
+	if g.Symbol().String() != EmptySymbolIDstring {
+		t.Error("Empty Grammar does not return '"+EmptySymbolIDstring+"' from String():", g.Symbol().String())
+	}
+	if len(g.Symbol().SubSymbols()) > 0 {
+		t.Error("Empty Grammar returns non-empty SubSymbols():", g.Symbol().SubSymbols())
+	}
+	c := g.Compact()
+	if len(c.Bytes(c.RootID)) > 0 {
+		t.Error("Empty CompactGrammar returns non-empty Bytes():", c.Bytes(c.RootID))
+	}
+	// if c.String() != EmptySymbolIDstring {
+	// 	t.Error("Empty CompactGrammar does not return '"+EmptySymbolIDstring+"' from String():", c.String())
+	// }
+	var b bytes.Buffer
+	err := c.PrettyPrint(&b)
+	if err != nil {
+		panic(err)
+	}
+	if len(b.String()) > 0 {
+		t.Error("Empty CompactGrammar returns non-empty PrettyPrint():", b.String())
+	}
+
 }
