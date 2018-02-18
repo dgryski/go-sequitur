@@ -42,7 +42,7 @@ func ExamplePrettyPrintUTF8() {
 		panic(err)
 	}
 
-	fmt.Println(string(output.Bytes()))
+	fmt.Println(output.String())
 
 	// Output:
 	// 0 -> 1 2 3 4 3 5 6 2 7 4 7 5 《 8 食 狮 史 》 \n 9 诗 士 8 ， 嗜 狮 ， 誓 食 十 10 氏 时 时 11 视 10 十 12 13 14 是 12 8 14 氏 视 15 恃 矢 势 ， 使 16 逝 世 17 氏 拾 18 19 20 湿 21 使 侍 拭 20 拭 21 始 试 食 18 17 食 时 ， 始 识 15 实 十 石 狮 尸 17 试 释 是 事 17

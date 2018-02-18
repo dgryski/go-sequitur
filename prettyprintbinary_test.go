@@ -20,7 +20,7 @@ func ExamplePrettyPrintBinary() {
 		panic(err)
 	}
 
-	fmt.Println(string(output.Bytes()))
+	fmt.Println(output.String())
 
 	// Output:
 	// 0 -> 1 \xfd 1 2 2

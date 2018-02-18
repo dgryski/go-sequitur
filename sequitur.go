@@ -319,11 +319,8 @@ func (g *Grammar) PrettyPrint(w io.Writer) error {
 	return nil
 }
 
-// ErrAlreadyParsed is returned if the grammar instance has already parsed a grammar
-var ErrAlreadyParsed = errors.New("sequitor: grammar already parsed")
-
 // ErrEmptyInput is returned if the input string is empty
-var ErrEmptyInput = errors.New("sequitor: empty input")
+var ErrEmptyInput = errors.New("sequitur: empty input")
 
 // Parse parses the given bytes.
 func Parse(str []byte) (*Grammar, error) {
@@ -406,9 +403,9 @@ func (rb runeOrByte) appendEscaped(b []byte) []byte {
 
 // appendBytes appends the byte (as a byte) or the rune (as utf-8)
 // to b.
-func (r runeOrByte) appendBytes(b []byte) []byte {
-	if r < 256 {
-		return append(b, byte(r))
+func (rb runeOrByte) appendBytes(b []byte) []byte {
+	if rb < 256 {
+		return append(b, byte(rb))
 	}
-	return append(b, string(r-256)...)
+	return append(b, string(rb-256)...)
 }
