@@ -258,9 +258,12 @@ func (ci *CompactIndexed) Importance(scoreFn func(SymbolID) float64) []Importanc
 	return imp
 }
 
-// Similarity between two CompactIndexed grammar.
+// Similarity between two CompactIndexed grammars. Result: 1 (or nearby) equality, 0 inequality.
 func (ci *CompactIndexed) Similarity(ci2 *CompactIndexed) float64 {
 	cumCoverage := 0.0
+	if len(ci2.StringToID) < len(ci.StringToID) {
+		ci2, ci = ci, ci2 // swap to iterate over ci2 if it is shorter
+	}
 	for str, sid := range ci.StringToID {
 		sid2, found := ci2.StringToID[str]
 		if found {
