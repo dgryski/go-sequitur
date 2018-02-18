@@ -3,7 +3,6 @@ package sequitur
 import (
 	"bytes"
 	"fmt"
-	"strings"
 )
 
 func ExampleImportance() {
@@ -14,12 +13,12 @@ func ExampleImportance() {
 	}
 
 	cGrammar := grammar.Compact()
-	filterdIdx := cGrammar.Index(func(in []byte) []byte {
+	filterdIdx := cGrammar.Index(func(in []byte) bool {
 		in = bytes.TrimSpace(in)
 		if len(in) >= 5 && len(in) <= 25 {
-			return in
+			return true
 		}
-		return nil
+		return false
 	})
 
 	for k, v := range filterdIdx.Importance(func(sid SymbolID) float64 {
@@ -31,7 +30,7 @@ func ExampleImportance() {
 			break
 		}
 
-		fmt.Printf("%d %7.5f %s\n", k, v.Score, strings.TrimSpace(string(cGrammar.Bytes(v.ID))))
+		fmt.Printf("%d %7.5f %s\n", k, v.Score, string(bytes.TrimSpace(cGrammar.Bytes(v.ID))))
 
 	}
 
@@ -93,4 +92,4 @@ References
  GrammarViz 2.0 – Sequitur and parallel Sequitur implementations in Java, Sequitur-based time series patterns discovery
 External links
 sequitur.info – the reference Sequitur algorithm implementation in C++, Java, and other languages
-`
+` // https://en.wikipedia.org/wiki/Sequitur_algorithm

@@ -191,6 +191,7 @@ type CompactIndexed struct {
 	MinSymByteLen       int
 	TrimSpace           bool
 	OriginalInputLength int
+	TotalCoverage       float64
 	StringToID          map[string]SymbolID
 	IDinfo              map[SymbolID]CompactIndexedInfo
 }
@@ -201,31 +202,31 @@ type CompactIndexedInfo struct {
 }
 
 // Index the Compact grammar to enable further analysis, optionally filtering the []byte representations of the symbols.
-func (comp *Compact) Index(filter func([]byte) []byte) *CompactIndexed {
+func (comp *Compact) Index(filterKeep func([]byte) bool) *CompactIndexed {
 	ret := &CompactIndexed{
 		CompactBasis: comp,
 		StringToID:   make(map[string]SymbolID),
 		IDinfo:       make(map[SymbolID]CompactIndexedInfo),
 	}
+	if filterKeep == nil {
+		filterKeep = func([]byte) bool { return true }
+	}
 	for k, v := range comp.Map {
-		bOrig := v.IDs.Bytes(comp)
+		b := v.IDs.Bytes(comp)
 		if k == comp.RootID {
-			ret.OriginalInputLength = len(bOrig)
+			ret.OriginalInputLength = len(b)
 		}
-		b := bOrig
-		if filter != nil {
-			b = filter(b)
-		}
-		if len(b) > 0 {
+		if filterKeep(b) {
 			ret.StringToID[string(b)] = k
 			ret.IDinfo[k] = CompactIndexedInfo{
-				Coverage: float64(len(bOrig)),
+				Coverage: float64(len(b)),
 			}
 		}
 	}
 	for k, v := range ret.IDinfo {
 		v.Coverage /= float64(ret.OriginalInputLength)
 		ret.IDinfo[k] = v
+		ret.TotalCoverage += v.Coverage
 	}
 	return ret
 }
@@ -255,4 +256,16 @@ func (ci *CompactIndexed) Importance(scoreFn func(SymbolID) float64) []Importanc
 		return imp[i].Score > imp[j].Score
 	})
 	return imp
+}
+
+// Similarity between two CompactIndexed grammar.
+func (ci *CompactIndexed) Similarity(ci2 *CompactIndexed) float64 {
+	cumCoverage := 0.0
+	for str, sid := range ci.StringToID {
+		sid2, found := ci2.StringToID[str]
+		if found {
+			cumCoverage += ci.IDinfo[sid].Coverage + ci2.IDinfo[sid2].Coverage
+		}
+	}
+	return cumCoverage / (ci.TotalCoverage + ci2.TotalCoverage)
 }
