@@ -6,28 +6,16 @@ import (
 
 func ExampleSimilarity() {
 
-	texts := []string{testSimilarity, testImportance, testString, " "}
-	textNames := []string{"sequitur.info", "wikipedia", "pease pudding", "one space"}
+	texts := []string{testSimilarity, testImportance, testString, ""}
+	textNames := []string{"sequitur.info", "wikipedia", "pease pudding", "empty"}
 
-	grammar := make([]*Grammar, len(texts))
-	compact := make([]*Compact, len(texts))
 	cindex := make([]*CompactIndexed, len(texts))
 
 	for textNum, text := range texts {
-		var err error
-
-		grammar[textNum], err = Parse([]byte(text))
-		if err != nil {
-			panic(err)
-		}
-
-		compact[textNum] = grammar[textNum].Compact()
-
-		cindex[textNum] = compact[textNum].Index(nil)
+		cindex[textNum] = Parse([]byte(text)).Compact().Index(nil)
 	}
 
 	for i1, ci1 := range cindex {
-
 		for i2, ci2 := range cindex {
 			fmt.Printf("%7.5f %15s %15s\n", ci1.Similarity(ci2), textNames[i1], textNames[i2])
 		}
@@ -37,19 +25,19 @@ func ExampleSimilarity() {
 	// 1.00000   sequitur.info   sequitur.info
 	// 0.05370   sequitur.info       wikipedia
 	// 0.00306   sequitur.info   pease pudding
-	// 0.00000   sequitur.info       one space
+	// 0.00000   sequitur.info           empty
 	// 0.05370       wikipedia   sequitur.info
 	// 0.99648       wikipedia       wikipedia
 	// 0.00289       wikipedia   pease pudding
-	// 0.00000       wikipedia       one space
+	// 0.00000       wikipedia           empty
 	// 0.00306   pease pudding   sequitur.info
 	// 0.00289   pease pudding       wikipedia
 	// 1.00000   pease pudding   pease pudding
-	// 0.00000   pease pudding       one space
-	// 0.00000       one space   sequitur.info
-	// 0.00000       one space       wikipedia
-	// 0.00000       one space   pease pudding
-	// 1.00000       one space       one space
+	// 0.00000   pease pudding           empty
+	// 0.00000           empty   sequitur.info
+	// 0.00000           empty       wikipedia
+	// 0.00000           empty   pease pudding
+	// 0.00000           empty           empty
 
 }
 

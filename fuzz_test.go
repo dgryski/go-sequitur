@@ -29,7 +29,7 @@ func TestFuzz(t *testing.T) {
 
 		var b bytes.Buffer
 
-		g, _ := Parse(contents)
+		g := Parse(contents)
 		g.Print(&b)
 		if !bytes.Equal(b.Bytes(), contents) {
 			t.Errorf("mismatch during evaluation for %s", corpusFile)

@@ -93,13 +93,14 @@ func (s *Symbol) SubSymbols() []*Symbol {
 
 // Symbol provides the top-level symbol for a Grammar.
 func (g *Grammar) Symbol() *Symbol {
-	if g.base == nil {
-		return nil // a nil *Symbol represents an empty grammar.
-	}
-	return (*Symbol)(&symbols{
+	ret := (*Symbol)(&symbols{
 		g:    g,
 		rule: g.base,
 	})
+	if len(ret.SubSymbols()) == 0 {
+		return nil // a nil *Symbol represents an empty grammar.
+	}
+	return ret
 }
 
 // Compact provides a more compact representation of the grammar, making it suitable for serialisation.
@@ -323,5 +324,9 @@ func (ci *CompactIndexed) Similarity(ci2 *CompactIndexed) float64 {
 			cumCoverage += ci.IDinfo[sid].Coverage + ci2.IDinfo[sid2].Coverage
 		}
 	}
-	return cumCoverage / (ci.TotalCoverage + ci2.TotalCoverage)
+	divisor := (ci.TotalCoverage + ci2.TotalCoverage)
+	if divisor == 0 {
+		return 0
+	}
+	return cumCoverage / divisor
 }

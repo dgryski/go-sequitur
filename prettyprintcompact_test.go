@@ -9,14 +9,10 @@ var testCompact = `Round and round the ragged rocks, the ragged rascal ran.`
 
 func ExamplePrettyPrintCompact() {
 
-	g, err := Parse([]byte(testCompact))
-	if err != nil {
-		panic(err)
-	}
+	g := Parse([]byte(testCompact))
 
 	var output bytes.Buffer
-	err = g.Compact().PrettyPrint(&output)
-	if err != nil {
+	if err := g.Compact().PrettyPrint(&output); err != nil {
 		panic(err)
 	}
 

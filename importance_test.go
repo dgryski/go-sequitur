@@ -7,12 +7,10 @@ import (
 
 func ExampleImportance() {
 
-	grammar, err := Parse([]byte(testImportance))
-	if err != nil {
-		panic(err)
-	}
+	grammar := Parse([]byte(testImportance))
 
 	cGrammar := grammar.Compact()
+
 	filterdIdx := cGrammar.Index(func(in []byte) bool {
 		in = bytes.TrimSpace(in)
 		if len(in) >= 5 && len(in) <= 25 {

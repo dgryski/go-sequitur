@@ -14,10 +14,7 @@ func TestFragments(t *testing.T) {
 	testSlices = append(testSlices, []byte(testCompact))
 
 	for tNum, test := range testSlices {
-		g, err := Parse(test)
-		if err != nil {
-			t.Fatal(err)
-		}
+		g := Parse(test)
 		if !reflect.DeepEqual(g.Symbol().Bytes(), test) {
 			t.Error(tNum, "g.Symbol().Bytes() not equal")
 		}
