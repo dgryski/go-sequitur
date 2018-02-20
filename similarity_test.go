@@ -37,7 +37,7 @@ func ExampleSimilarity() {
 	// 0.00000           empty   sequitur.info
 	// 0.00000           empty       wikipedia
 	// 0.00000           empty   pease pudding
-	// 0.00000           empty           empty
+	// 1.00000           empty           empty
 
 }
 

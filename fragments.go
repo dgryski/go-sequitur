@@ -110,6 +110,18 @@ type Compact struct {
 	Map    map[SymbolID]CompactEntry
 }
 
+// String form of a Compact grammar, returns .PrettyPrint() output or "\empty".
+func (comp *Compact) String() string {
+	if comp.RootID == EmptySymbolID {
+		return comp.RootID.String()
+	}
+	var b bytes.Buffer
+	if err := comp.PrettyPrint(&b); err != nil {
+		return err.Error()
+	}
+	return b.String()
+}
+
 // CompactEntry gives the minimal information about a symbol which is comprised of others.
 type CompactEntry struct {
 	Used int
@@ -326,7 +338,7 @@ func (ci *CompactIndexed) Similarity(ci2 *CompactIndexed) float64 {
 	}
 	divisor := (ci.TotalCoverage + ci2.TotalCoverage)
 	if divisor == 0 {
-		return 0
+		return 1 // two empty grammars are equal
 	}
 	return cumCoverage / divisor
 }

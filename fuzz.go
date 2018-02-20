@@ -5,17 +5,20 @@ package sequitur
 import "bytes"
 
 func Fuzz(data []byte) int {
-	if len(data) == 0 {
-		return 0
-	}
-
-	var b bytes.Buffer
 
 	g := Parse(data)
-	g.Print(&b)
 
+	var b bytes.Buffer
+	if err := g.Print(&b); err != nil {
+		panic(err)
+	}
 	if !bytes.Equal(b.Bytes(), data) {
-		panic("roundtrip mismatch")
+		panic("Parse/Print roundtrip mismatch")
+	}
+
+	gc := g.Compact()
+	if !bytes.Equal(gc.Bytes(gc.RootID), data) {
+		panic("Parse/Compact/Bytes roundtrip mismatch")
 	}
 
 	return 0

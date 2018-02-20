@@ -2,6 +2,7 @@ package sequitur
 
 import (
 	"bytes"
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -42,9 +43,9 @@ func TestEmpty(t *testing.T) {
 	if len(c.Bytes(c.RootID)) > 0 {
 		t.Error("Empty CompactGrammar returns non-empty Bytes():", c.Bytes(c.RootID))
 	}
-	// if c.String() != EmptySymbolIDstring {
-	// 	t.Error("Empty CompactGrammar does not return '"+EmptySymbolIDstring+"' from String():", c.String())
-	// }
+	if fmt.Sprintf("%v", c) != EmptySymbolIDstring {
+		t.Error("Empty CompactGrammar does not return '"+EmptySymbolIDstring+"' from String():", c.String())
+	}
 	var b bytes.Buffer
 	err := c.PrettyPrint(&b)
 	if err != nil {
