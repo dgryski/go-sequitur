@@ -7,7 +7,6 @@
 package sequitur
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"unicode"
@@ -268,9 +267,6 @@ func (pr *prettyPrinter) printTerminal(w io.Writer, sym uint64) error {
 	return err
 }
 
-// ErrNoParsedGrammar is returned if no grammar has been parsed
-var ErrNoParsedGrammar = errors.New("sequitur: no parsed grammar")
-
 func rawPrint(w io.Writer, r *rules) error {
 	for p := r.first(); !p.isGuard(); p = p.next {
 		if p.isNonTerminal() {
@@ -288,18 +284,11 @@ func rawPrint(w io.Writer, r *rules) error {
 
 // Print reconstructs the input to w
 func (g *Grammar) Print(w io.Writer) error {
-	if g.base == nil {
-		return ErrNoParsedGrammar
-	}
 	return rawPrint(w, g.base)
 }
 
 // PrettyPrint outputs the grammar to w
 func (g *Grammar) PrettyPrint(w io.Writer) error {
-
-	if g.base == nil {
-		return ErrNoParsedGrammar
-	}
 
 	pr := prettyPrinter{
 		index: make(map[*rules]int),
@@ -319,16 +308,10 @@ func (g *Grammar) PrettyPrint(w io.Writer) error {
 	return nil
 }
 
-// ErrEmptyInput is returned if the input string is empty
-var ErrEmptyInput = errors.New("sequitur: empty input")
-
 // Parse parses the given bytes.
-func Parse(str []byte) (*Grammar, error) {
-	if len(str) == 0 {
-		return nil, ErrEmptyInput
-	}
+func Parse(str []byte) *Grammar {
 	g := &Grammar{
-		ruleID: uint64(utf8.MaxRune) + 1, // larger than the largest rune
+		ruleID: maxRuneOrByte + 1,
 		table:  make(digrams),
 	}
 	g.base = g.newRules()
@@ -346,7 +329,7 @@ func Parse(str []byte) (*Grammar, error) {
 		}
 		off += sz
 	}
-	return g, nil
+	return g
 }
 
 // runeOrByte holds a rune or a byte so that we can distinguish between
@@ -355,6 +338,8 @@ func Parse(str []byte) (*Grammar, error) {
 // runes are represented as 256 onwards (subtract 256 to get the
 // actual rune value). Note that the range 0-127 is unused.
 type runeOrByte rune
+
+const maxRuneOrByte = uint64(utf8.MaxRune) + 256 // larger than the largest possible value of runeOrByte
 
 func newRune(r rune) runeOrByte {
 	return runeOrByte(r + 256)

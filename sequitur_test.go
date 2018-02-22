@@ -12,17 +12,29 @@ import (
 )
 
 func TestNoInput(t *testing.T) {
-	_, err := Parse([]byte{})
-	if err != ErrEmptyInput {
-		t.Error("ErrEmptyInput not returned for empty input")
+	for _, in := range [][]byte{nil, []byte{}} {
+		empty := Parse(in)
+		var b bytes.Buffer
+		if err := empty.Print(&b); err != nil {
+			t.Error(err)
+			return
+		}
+		if len(b.Bytes()) > 0 {
+			t.Errorf("%#v input produced output: %v", in, b.Bytes())
+		}
+		var pp bytes.Buffer
+		if err := empty.Print(&pp); err != nil {
+			t.Error(err)
+			return
+		}
+		if len(pp.String()) > 0 {
+			t.Errorf("%#v input produced output: %v", in, pp.String())
+		}
 	}
 }
 
 func TestUTF8(t *testing.T) { // issue #3
-	g, err := Parse([]byte(`°`))
-	if err != nil {
-		t.Fatal(err)
-	}
+	g := Parse([]byte(`°`))
 	var buf bytes.Buffer
 	g.PrettyPrint(&buf)
 	if !utf8.Valid(buf.Bytes()) {
@@ -31,10 +43,7 @@ func TestUTF8(t *testing.T) { // issue #3
 }
 
 func TestPrintUTF8(t *testing.T) {
-	g, err := Parse([]byte(testString))
-	if err != nil {
-		t.Fatal(err)
-	}
+	g := Parse([]byte(testString))
 	var buf bytes.Buffer
 	g.Print(&buf)
 	if buf.String() != testString {
@@ -44,10 +53,7 @@ func TestPrintUTF8(t *testing.T) {
 }
 
 func TestPrintBinary(t *testing.T) {
-	g, err := Parse(testBinary)
-	if err != nil {
-		t.Fatal(err)
-	}
+	g := Parse(testBinary)
 	var buf bytes.Buffer
 	g.Print(&buf)
 	if !bytes.Equal(buf.Bytes(), testBinary) {
@@ -128,7 +134,7 @@ func TestQuick(t *testing.T) {
 
 		var b bytes.Buffer
 
-		g, _ := Parse(contents)
+		g := Parse(contents)
 		g.Print(&b)
 
 		return bytes.Equal(b.Bytes(), contents)
@@ -157,7 +163,7 @@ func TestGolden(t *testing.T) {
 
 		var b bytes.Buffer
 
-		g, _ := Parse(contents)
+		g := Parse(contents)
 		g.PrettyPrint(&b)
 
 		outputFile := strings.TrimSuffix(corpusFile, ".input") + ".output"
