@@ -7,8 +7,9 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"testing/quick"
 	"unicode/utf8"
+
+	"github.com/dgryski/go-tinyfuzz"
 )
 
 func TestNoInput(t *testing.T) {
@@ -77,7 +78,7 @@ func TestRuneOrByteAppendBytesWithRune(t *testing.T) {
 		rb := newRune(rune(i))
 		buf = append(buf[:0], "ab"...)
 		buf = rb.appendBytes(buf)
-		if want := "ab" + string(i); string(buf) != want {
+		if want := "ab" + string([]rune{rune(i)}); string(buf) != want {
 			t.Errorf("unexpected bytes appended; got %q want %q", buf, want)
 		}
 	}
@@ -119,8 +120,8 @@ func TestRuneOrByteAppendEscapedWithRune(t *testing.T) {
 			t.Fatalf("cannot unquote %q (byte %x): %v", buf, i, err)
 			continue
 		}
-		if want := string(i); got != want {
-			t.Fatalf("unexpected result, got %q want %q ", got, want)
+		if want := string([]rune{rune(i)}); got != want {
+			t.Errorf("unexpected result, got %q want %q ", got, want)
 		}
 	}
 }
@@ -140,7 +141,7 @@ func TestQuick(t *testing.T) {
 		return bytes.Equal(b.Bytes(), contents)
 	}
 
-	if err := quick.Check(f, nil); err != nil {
+	if err := tinyfuzz.Fuzz(f, nil); err != nil {
 		t.Errorf("error during quickcheck: %v", err)
 	}
 }

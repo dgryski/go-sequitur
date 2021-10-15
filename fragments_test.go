@@ -3,7 +3,6 @@ package sequitur
 import (
 	"bytes"
 	"fmt"
-	"reflect"
 	"testing"
 )
 
@@ -16,15 +15,14 @@ func TestFragments(t *testing.T) {
 
 	for tNum, test := range testSlices {
 		g := Parse(test)
-		if !reflect.DeepEqual(g.Symbol().Bytes(), test) {
+		if string(g.Symbol().Bytes()) != string(test) {
 			t.Error(tNum, "g.Symbol().Bytes() not equal")
 		}
 
 		comp := g.Compact()
-		if !reflect.DeepEqual(comp.Bytes(comp.RootID), test) {
+		if string(comp.Bytes(comp.RootID)) != string(test) {
 			t.Error(tNum, "comp.Bytes() not equal")
 		}
-
 	}
 }
 
