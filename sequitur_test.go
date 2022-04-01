@@ -111,6 +111,11 @@ func TestRuneOrByteAppendEscapedWithRune(t *testing.T) {
 		if i == '"' || i == '\\' {
 			continue
 		}
+
+		if !utf8.ValidRune(rune(i)) {
+			continue
+		}
+
 		buf = append(buf[:0], '"')
 		rb := newRune(rune(i))
 		buf = rb.appendEscaped(buf)
